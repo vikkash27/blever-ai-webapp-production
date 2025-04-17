@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import Image from "next/image"; 
 import { 
@@ -125,36 +126,24 @@ export default function CompanyOverviewPage() {
           </div>
         </div>
         
-        {/* Main Content Tabs - Updated to restore the full width */}
+        {/* Main Content Tabs - Updated to match data-management styling */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8 bg-slate-100 p-1 rounded-lg">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger 
               value="overview" 
-              className={`rounded-md py-2 text-sm font-medium transition-all ${
-                activeTab === "overview" 
-                  ? "bg-white text-slate-800 shadow-sm" 
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-700"
-              }`}
+              className={activeTab === "overview" ? "bg-slate-800 text-white data-[state=active]:bg-slate-800 data-[state=active]:text-white" : ""}
             >
               <Building className="mr-2 h-4 w-4" /> Company Overview
             </TabsTrigger>
             <TabsTrigger 
               value="documents" 
-              className={`rounded-md py-2 text-sm font-medium transition-all ${
-                activeTab === "documents" 
-                  ? "bg-white text-slate-800 shadow-sm" 
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-700"
-              }`}
+              className={activeTab === "documents" ? "bg-slate-800 text-white data-[state=active]:bg-slate-800 data-[state=active]:text-white" : ""}
             >
               <FileText className="mr-2 h-4 w-4" /> Company Documents
             </TabsTrigger>
             <TabsTrigger 
               value="esg-targets" 
-              className={`rounded-md py-2 text-sm font-medium transition-all ${
-                activeTab === "esg-targets" 
-                  ? "bg-white text-slate-800 shadow-sm" 
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-700"
-              }`}
+              className={activeTab === "esg-targets" ? "bg-slate-800 text-white data-[state=active]:bg-slate-800 data-[state=active]:text-white" : ""}
             >
               <GanttChart className="mr-2 h-4 w-4" /> ESG Targets
             </TabsTrigger>
@@ -175,68 +164,132 @@ export default function CompanyOverviewPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {isAdmin ? (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="company-name">Company Name</Label>
-                          <Input id="company-name" defaultValue={organization.name} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="company-industry">Industry</Label>
-                          <Input id="company-industry" placeholder="e.g. Technology, Manufacturing, etc." />
-                        </div>
-                      </div>
-                      
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="company-description">Company Description</Label>
-                        <textarea 
-                          id="company-description" 
-                          placeholder="Describe your company, mission and values..."
-                          className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        />
+                        <Label htmlFor="company-name">Company Name</Label>
+                        <Input id="company-name" defaultValue={organization.name} />
                       </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="company-website">Website</Label>
-                          <div className="flex">
-                            <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
-                              <Globe className="h-4 w-4 text-slate-500" />
-                            </div>
-                            <Input id="company-website" placeholder="www.example.com" className="rounded-l-none" />
+                      <div className="space-y-2">
+                        <Label htmlFor="company-industry">Industry</Label>
+                        <Select>
+                          <SelectTrigger id="company-industry">
+                            <SelectValue placeholder="Select industry" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="technology">Technology</SelectItem>
+                            <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                            <SelectItem value="healthcare">Healthcare</SelectItem>
+                            <SelectItem value="finance">Finance</SelectItem>
+                            <SelectItem value="retail">Retail</SelectItem>
+                            <SelectItem value="education">Education</SelectItem>
+                            <SelectItem value="energy">Energy</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="company-description">Company Description</Label>
+                      <textarea 
+                        id="company-description" 
+                        placeholder="Describe your company, mission and values..."
+                        className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="company-website">Website</Label>
+                        <div className="flex">
+                          <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
+                            <Globe className="h-4 w-4 text-slate-500" />
                           </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="company-size">Company Size</Label>
-                          <Input id="company-size" placeholder="e.g. 100-500 employees" />
+                          <Input id="company-website" placeholder="www.example.com" className="rounded-l-none" />
                         </div>
                       </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="company-founded">Founded Year</Label>
-                          <Input id="company-founded" placeholder="e.g. 2010" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="company-headquarters">Headquarters</Label>
-                          <Input id="company-headquarters" placeholder="e.g. London, UK" />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end">
-                        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                          Save Company Details
-                        </Button>
+                      <div className="space-y-2">
+                        <Label htmlFor="company-size">Company Size</Label>
+                        <Select>
+                          <SelectTrigger id="company-size">
+                            <SelectValue placeholder="Select company size" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1-10">1-10 employees</SelectItem>
+                            <SelectItem value="11-50">11-50 employees</SelectItem>
+                            <SelectItem value="51-200">51-200 employees</SelectItem>
+                            <SelectItem value="201-500">201-500 employees</SelectItem>
+                            <SelectItem value="501-1000">501-1000 employees</SelectItem>
+                            <SelectItem value="1001-5000">1001-5000 employees</SelectItem>
+                            <SelectItem value="5000+">5000+ employees</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <p className="text-slate-600">
-                        Your company details will be displayed here once they&apos;ve been added by an admin.
-                      </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="company-founded">Founded Year</Label>
+                        <Input id="company-founded" type="number" placeholder="e.g. 2010" min="1800" max="2099" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="company-headquarters">Headquarters</Label>
+                        <Input id="company-headquarters" placeholder="e.g. London, UK" />
+                      </div>
                     </div>
-                  )}
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="company-address">Full Address</Label>
+                      <textarea 
+                        id="company-address" 
+                        placeholder="Enter your company's full address"
+                        className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="company-country">Country</Label>
+                        <Select>
+                          <SelectTrigger id="company-country">
+                            <SelectValue placeholder="Select country" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="uk">United Kingdom</SelectItem>
+                            <SelectItem value="us">United States</SelectItem>
+                            <SelectItem value="ca">Canada</SelectItem>
+                            <SelectItem value="au">Australia</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="company-sector">Sector</Label>
+                        <Select>
+                          <SelectTrigger id="company-sector">
+                            <SelectValue placeholder="Select sector" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="public">Public</SelectItem>
+                            <SelectItem value="private">Private</SelectItem>
+                            <SelectItem value="non-profit">Non-profit</SelectItem>
+                            <SelectItem value="government">Government</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="tax-id">Tax ID/Company Number</Label>
+                        <Input id="tax-id" placeholder="Enter company registration number" />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                        Save Company Details
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -249,9 +302,34 @@ export default function CompanyOverviewPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {/* SMEESG Score - New addition */}
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
-                      <Label className="text-sm text-slate-600">Overall ESG Score</Label>
+                      <Label className="text-sm text-slate-600">SMEESG Score</Label>
+                      <span className="text-xl font-semibold text-emerald-600">90/100</span>
+                    </div>
+                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: '90%' }}></div>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Environmental</span>
+                      <span className="text-sm font-medium text-emerald-600">94/100</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Social</span>
+                      <span className="text-sm font-medium text-blue-600">82/100</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Governance</span>
+                      <span className="text-sm font-medium text-amber-600">88/100</span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-sm text-slate-600">Overall ESG Readiness Score</Label>
                       <span className="text-xl font-semibold text-emerald-600">78/100</span>
                     </div>
                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
@@ -295,68 +373,64 @@ export default function CompanyOverviewPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {isAdmin ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <h3 className="font-medium">ESG Reporting Lead</h3>
                     <div className="space-y-2">
-                      <h3 className="font-medium">ESG Reporting Lead</h3>
-                      <div className="space-y-2">
-                        <Input placeholder="Full Name" />
-                        <div className="flex">
-                          <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
-                            <Mail className="h-4 w-4 text-slate-500" />
-                          </div>
-                          <Input placeholder="Email Address" className="rounded-l-none" />
+                      <Input placeholder="Full Name" />
+                      <div className="flex">
+                        <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
+                          <Mail className="h-4 w-4 text-slate-500" />
                         </div>
-                        <div className="flex">
-                          <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
-                            <Phone className="h-4 w-4 text-slate-500" />
-                          </div>
-                          <Input placeholder="Phone Number" className="rounded-l-none" />
-                        </div>
+                        <Input placeholder="Email Address" className="rounded-l-none" />
                       </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <h3 className="font-medium">Sustainability Manager</h3>
-                      <div className="space-y-2">
-                        <Input placeholder="Full Name" />
-                        <div className="flex">
-                          <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
-                            <Mail className="h-4 w-4 text-slate-500" />
-                          </div>
-                          <Input placeholder="Email Address" className="rounded-l-none" />
+                      <div className="flex">
+                        <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
+                          <Phone className="h-4 w-4 text-slate-500" />
                         </div>
-                        <div className="flex">
-                          <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
-                            <Phone className="h-4 w-4 text-slate-500" />
-                          </div>
-                          <Input placeholder="Phone Number" className="rounded-l-none" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <h3 className="font-medium">CFO/Finance Contact</h3>
-                      <div className="space-y-2">
-                        <Input placeholder="Full Name" />
-                        <div className="flex">
-                          <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
-                            <Mail className="h-4 w-4 text-slate-500" />
-                          </div>
-                          <Input placeholder="Email Address" className="rounded-l-none" />
-                        </div>
-                        <div className="flex">
-                          <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
-                            <Phone className="h-4 w-4 text-slate-500" />
-                          </div>
-                          <Input placeholder="Phone Number" className="rounded-l-none" />
-                        </div>
+                        <Input placeholder="Phone Number" className="rounded-l-none" />
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <p className="text-slate-600">Contact information will appear here once added by an admin.</p>
-                )}
+
+                  <div className="space-y-2">
+                    <h3 className="font-medium">Sustainability Manager</h3>
+                    <div className="space-y-2">
+                      <Input placeholder="Full Name" />
+                      <div className="flex">
+                        <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
+                          <Mail className="h-4 w-4 text-slate-500" />
+                        </div>
+                        <Input placeholder="Email Address" className="rounded-l-none" />
+                      </div>
+                      <div className="flex">
+                        <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
+                          <Phone className="h-4 w-4 text-slate-500" />
+                        </div>
+                        <Input placeholder="Phone Number" className="rounded-l-none" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="font-medium">CFO/Finance Contact</h3>
+                    <div className="space-y-2">
+                      <Input placeholder="Full Name" />
+                      <div className="flex">
+                        <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
+                          <Mail className="h-4 w-4 text-slate-500" />
+                        </div>
+                        <Input placeholder="Email Address" className="rounded-l-none" />
+                      </div>
+                      <div className="flex">
+                        <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
+                          <Phone className="h-4 w-4 text-slate-500" />
+                        </div>
+                        <Input placeholder="Phone Number" className="rounded-l-none" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 

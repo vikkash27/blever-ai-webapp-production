@@ -18,11 +18,21 @@ import {
 
 // Mock data (replace with actual data fetching later)
 const mockData = {
+  smeesgScore: 90,
   dssScore: 78,
   progress: {
-    environmental: 85,
-    social: 60,
-    governance: 70,
+    environmental: {
+      data: 85,
+      smeesg: 94
+    },
+    social: {
+      data: 60,
+      smeesg: 82
+    },
+    governance: {
+      data: 70,
+      smeesg: 88
+    },
   },
   missingData: [
     "Latest Waste Management Report (Q1 2025)",
@@ -112,34 +122,64 @@ export default function DashboardPage() {
 
         {/* Main Dashboard Cards */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-          {/* Left Column - Overall Score */}
-          <Card className="md:col-span-4 shadow-sm border-slate-200">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg text-center text-slate-700">Overall ESG Readiness</CardTitle>
-              <CardDescription className="text-center">Data Sufficiency Score (DSS)</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center pt-4">
-              <div className="relative flex items-center justify-center mb-2">
-                <svg width="150" height="150" className="rotate-[-90deg]">
-                  <circle cx="75" cy="75" r="60" stroke="#e2e8f0" strokeWidth="12" fill="none" />
-                  <circle
-                    cx="75" cy="75" r="60"
-                    stroke="#10b981"
-                    strokeWidth="12"
-                    fill="none"
-                    strokeDasharray={2 * Math.PI * 60}
-                    strokeDashoffset={2 * Math.PI * 60 * (1 - mockData.dssScore / 100)}
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <div className="absolute flex flex-col items-center">
-                  <span className="text-4xl font-bold text-slate-800">{mockData.dssScore}%</span>
-                  <span className="text-xs text-slate-500">Complete</span>
+          {/* Left Column - Overall Scores */}
+          <div className="md:col-span-4 grid grid-cols-1 gap-6">
+            {/* Overall ESG Score - SMEESG */}
+            <Card className="shadow-sm border-slate-200">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg text-center text-slate-700">Overall ESG Score</CardTitle>
+                <CardDescription className="text-center">SMEESG</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center pt-4">
+                <div className="relative flex items-center justify-center mb-2">
+                  <svg width="150" height="150" className="rotate-[-90deg]">
+                    <circle cx="75" cy="75" r="60" stroke="#e2e8f0" strokeWidth="12" fill="none" />
+                    <circle
+                      cx="75" cy="75" r="60"
+                      stroke="#10b981"
+                      strokeWidth="12"
+                      fill="none"
+                      strokeDasharray={2 * Math.PI * 60}
+                      strokeDashoffset={2 * Math.PI * 60 * (1 - mockData.smeesgScore / 100)}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute flex flex-col items-center">
+                    <span className="text-4xl font-bold text-slate-800">{mockData.smeesgScore}%</span>
+                  </div>
                 </div>
-              </div>
-              <span className="text-sm text-slate-600 text-center mt-4">Your overall ESG data completeness</span>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+            
+            {/* Data Sufficiency Score */}
+            <Card className="shadow-sm border-slate-200">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg text-center text-slate-700">Overall ESG Readiness</CardTitle>
+                <CardDescription className="text-center">Data Sufficiency Score (DSS)</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center pt-4">
+                <div className="relative flex items-center justify-center mb-2">
+                  <svg width="150" height="150" className="rotate-[-90deg]">
+                    <circle cx="75" cy="75" r="60" stroke="#e2e8f0" strokeWidth="12" fill="none" />
+                    <circle
+                      cx="75" cy="75" r="60"
+                      stroke="#10b981"
+                      strokeWidth="12"
+                      fill="none"
+                      strokeDasharray={2 * Math.PI * 60}
+                      strokeDashoffset={2 * Math.PI * 60 * (1 - mockData.dssScore / 100)}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute flex flex-col items-center">
+                    <span className="text-4xl font-bold text-slate-800">{mockData.dssScore}%</span>
+                    <span className="text-xs text-slate-500">Complete</span>
+                  </div>
+                </div>
+                <span className="text-sm text-slate-600 text-center mt-4">Your overall ESG data completeness</span>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Right Column - Progress Bars */}
           <div className="md:col-span-8 grid grid-cols-1 gap-4">
@@ -155,14 +195,27 @@ export default function DashboardPage() {
                 </span>
               </CardHeader>
               <CardContent className="px-6 pb-4 pt-0">
+                {/* SMEESG Score */}
+                <div className="mb-1 flex justify-between items-center">
+                  <span className="text-xs text-slate-500">Score</span>
+                  <span className="text-sm font-medium text-emerald-600">{mockData.progress.environmental.smeesg}%</span>
+                </div>
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden mb-4">
+                  <div 
+                    className="h-full bg-emerald-500 rounded-full" 
+                    style={{ width: `${mockData.progress.environmental.smeesg}%` }}
+                  ></div>
+                </div>
+                
+                {/* Data Progress */}
                 <div className="mb-1 flex justify-between items-center">
                   <span className="text-xs text-slate-500">Progress</span>
-                  <span className="text-sm font-medium text-emerald-600">{mockData.progress.environmental}%</span>
+                  <span className="text-sm font-medium text-emerald-600">{mockData.progress.environmental.data}%</span>
                 </div>
                 <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-emerald-500 rounded-full" 
-                    style={{ width: `${mockData.progress.environmental}%` }}
+                    style={{ width: `${mockData.progress.environmental.data}%` }}
                   ></div>
                 </div>
               </CardContent>
@@ -180,14 +233,27 @@ export default function DashboardPage() {
                 </span>
               </CardHeader>
               <CardContent className="px-6 pb-4 pt-0">
+                {/* SMEESG Score */}
+                <div className="mb-1 flex justify-between items-center">
+                  <span className="text-xs text-slate-500">Score</span>
+                  <span className="text-sm font-medium text-blue-600">{mockData.progress.social.smeesg}%</span>
+                </div>
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden mb-4">
+                  <div 
+                    className="h-full bg-blue-500 rounded-full" 
+                    style={{ width: `${mockData.progress.social.smeesg}%` }}
+                  ></div>
+                </div>
+                
+                {/* Data Progress */}
                 <div className="mb-1 flex justify-between items-center">
                   <span className="text-xs text-slate-500">Progress</span>
-                  <span className="text-sm font-medium text-blue-600">{mockData.progress.social}%</span>
+                  <span className="text-sm font-medium text-blue-600">{mockData.progress.social.data}%</span>
                 </div>
                 <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-blue-500 rounded-full" 
-                    style={{ width: `${mockData.progress.social}%` }}
+                    style={{ width: `${mockData.progress.social.data}%` }}
                   ></div>
                 </div>
               </CardContent>
@@ -205,14 +271,27 @@ export default function DashboardPage() {
                 </span>
               </CardHeader>
               <CardContent className="px-6 pb-4 pt-0">
+                {/* SMEESG Score */}
+                <div className="mb-1 flex justify-between items-center">
+                  <span className="text-xs text-slate-500">Score</span>
+                  <span className="text-sm font-medium text-amber-600">{mockData.progress.governance.smeesg}%</span>
+                </div>
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden mb-4">
+                  <div 
+                    className="h-full bg-amber-500 rounded-full" 
+                    style={{ width: `${mockData.progress.governance.smeesg}%` }}
+                  ></div>
+                </div>
+                
+                {/* Data Progress */}
                 <div className="mb-1 flex justify-between items-center">
                   <span className="text-xs text-slate-500">Progress</span>
-                  <span className="text-sm font-medium text-amber-600">{mockData.progress.governance}%</span>
+                  <span className="text-sm font-medium text-amber-600">{mockData.progress.governance.data}%</span>
                 </div>
                 <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-amber-500 rounded-full" 
-                    style={{ width: `${mockData.progress.governance}%` }}
+                    style={{ width: `${mockData.progress.governance.data}%` }}
                   ></div>
                 </div>
               </CardContent>
