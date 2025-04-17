@@ -419,8 +419,7 @@ export default function UploadGuidePage() {
                       Document Quality
                     </h4>
                     <p className="text-sm text-slate-600 mt-2">
-                      Ensure uploaded documents are clear and legible. Scanned documents should be high resolution (300 DPI or higher) and text-searchable (OCR'&apos;d) if possible.
-                    </p>
+                    Ensure uploaded documents are clear and legible. Scanned documents should be high resolution (300 DPI or higher) and text-searchable (OCR&apos;d) if possible.                    </p>
                   </div>
                   
                   <div className="bg-slate-50 p-4 rounded-lg">
