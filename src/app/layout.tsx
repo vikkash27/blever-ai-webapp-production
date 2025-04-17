@@ -1,13 +1,15 @@
-import { ClerkProvider, UserButton } from '@clerk/nextjs'
+import { ClerkProvider } from '@clerk/nextjs'; // Removed UserButton import for now
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+// Removed Link import as it's not used here anymore
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
+// This metadata export is correct for a Server Component layout
 export const metadata: Metadata = {
-  title: "BLever.AI", // Updated Title
-  description: "ESG Scoring Automation Platform", // Updated Description
+  title: "BLever.AI",
+  description: "ESG Scoring Automation Platform",
 };
 
 export default function RootLayout({
@@ -18,12 +20,12 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className={inter.className}>
-          <header style={{ padding: '1rem', borderBottom: '1px solid #ccc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h1>BLever.AI</h1>
-            <UserButton afterSignOutUrl="/"/>
-          </header>
+        {/* Removed flex flex-col, header is gone */}
+        <body className={`${inter.className} min-h-screen`}>
+          {/* No header here anymore */}
+          {/* Main Content Area takes full height */}
           <main>{children}</main>
+          {/* Optional Footer could go here */}
         </body>
       </html>
     </ClerkProvider>
