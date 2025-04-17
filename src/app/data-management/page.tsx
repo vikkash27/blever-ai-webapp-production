@@ -309,7 +309,7 @@ export default function DataManagementPage() {
           <DialogHeader>
             <DialogTitle>Edit ESG Data Field</DialogTitle>
             <DialogDescription>
-              Update the information for this data point. Click save when you're done.
+              Update the information for this data point. Click save when you&apos;re done.
             </DialogDescription>
           </DialogHeader>
           

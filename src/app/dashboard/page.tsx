@@ -4,16 +4,13 @@ import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
 import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
 import { 
-  CheckCircle2, 
   AlertTriangle, 
   TrendingUp, 
   ArrowRight, 
   Info, 
   CalendarDays,
-  BarChart4,
   LineChart,
   PieChart,
   Building2
@@ -98,7 +95,7 @@ export default function DashboardPage() {
               <TrendingUp className="h-7 w-7 text-emerald-600" /> ESG Dashboard
             </h1>
             <p className="text-slate-600">
-              Welcome back, <span className="font-medium">{user?.firstName || 'User'}</span>! Here's your ESG data readiness summary.
+              Welcome back, <span className="font-medium">{user?.firstName || 'User'}</span>! Here&apos;s your ESG data readiness summary.
             </p>
           </div>
           <div className="flex gap-3 mt-2 md:mt-0">
@@ -227,7 +224,7 @@ export default function DashboardPage() {
         <Card className="shadow-sm border-slate-200">
           <CardHeader className="py-4 px-6 flex flex-row items-center">
             <AlertTriangle className="h-5 w-5 text-amber-500 mr-2" />
-            <CardTitle className="text-lg">What's Missing?</CardTitle>
+            <CardTitle className="text-lg">What&apos;s Missing?</CardTitle>
           </CardHeader>
           <CardContent className="px-6">
             <ul className="space-y-2 mb-4">
@@ -251,7 +248,7 @@ export default function DashboardPage() {
         {/* Detailed Metrics Section */}
         <div className="pt-6">
           <h2 className="text-xl font-semibold text-slate-800 mb-6 flex items-center">
-            <BarChart4 className="mr-2 h-5 w-5 text-slate-700" /> Detailed Metrics
+            <LineChart className="mr-2 h-5 w-5 text-slate-700" /> Detailed Metrics
           </h2>
 
           {/* Energy Usage Chart Card */}

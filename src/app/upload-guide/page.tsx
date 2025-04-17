@@ -22,8 +22,6 @@ import {
   Building2, 
   FileCheck2, 
   HelpCircle, 
-  FileQuestion, 
-  Lock,
   CalendarDays,
   CheckCircle,
   FileUp,
@@ -78,7 +76,7 @@ export default function UploadGuidePage() {
                 </div>
                 <h3 className="font-medium text-slate-800 mb-2">2. Upload to Platform</h3>
                 <p className="text-sm text-slate-600">
-                  Navigate to the Data Management page. Use the "Upload Center" tab to drag & drop your files or browse your computer to select them.
+                  Navigate to the Data Management page. Use the &quot;Upload Center&quot; tab to drag & drop your files or browse your computer to select them.
                 </p>
               </div>
               
@@ -88,7 +86,7 @@ export default function UploadGuidePage() {
                 </div>
                 <h3 className="font-medium text-slate-800 mb-2">3. Review & Confirm</h3>
                 <p className="text-sm text-slate-600">
-                  Our AI will extract key ESG data points. Review the extracted information in the "Review Data" tab and confirm or edit as needed.
+                  Our AI will extract key ESG data points. Review the extracted information in the &quot;Review Data&quot; tab and confirm or edit as needed.
                 </p>
               </div>
             </div>
@@ -358,7 +356,7 @@ export default function UploadGuidePage() {
                 <Accordion type="multiple" className="w-full space-y-2">
                   <AccordionItem value="faq-1" className="border px-4 rounded-lg">
                     <AccordionTrigger className="hover:no-underline py-3">
-                      <span className="text-sm font-medium text-slate-800">What if I don't have all the data?</span>
+                      <span className="text-sm font-medium text-slate-800">What if I don&apos;t have all the data?</span>
                     </AccordionTrigger>
                     <AccordionContent className="pb-3 text-sm text-slate-600">
                       Provide what you can. Our platform identifies gaps based on standard ESG frameworks. Your dashboard will highlight key missing areas, and your Data Sufficiency Score (DSS) shows your data completeness. Start with what you have and gradually improve your score.
@@ -370,7 +368,7 @@ export default function UploadGuidePage() {
                       <span className="text-sm font-medium text-slate-800">What documents can I use?</span>
                     </AccordionTrigger>
                     <AccordionContent className="pb-3 text-sm text-slate-600">
-                      Refer to the "ESG Categories" section for specific examples. Common sources include Annual Reports, Sustainability Reports, Utility Bills, HR Records, Policy Documents, Environmental Permits, and Carbon Footprint Reports. If unsure, upload the document and our system will attempt to classify it automatically.
+                      Refer to the &quot;ESG Categories&quot; section for specific examples. Common sources include Annual Reports, Sustainability Reports, Utility Bills, HR Records, Policy Documents, Environmental Permits, and Carbon Footprint Reports. If unsure, upload the document and our system will attempt to classify it automatically.
                     </AccordionContent>
                   </AccordionItem>
                   
@@ -459,7 +457,7 @@ export default function UploadGuidePage() {
                       Processing Time
                     </h4>
                     <p className="text-sm text-slate-600 mt-2">
-                      Document processing usually takes 2-5 minutes depending on complexity. You'll receive a notification when extraction is complete and ready for your review.
+                      Document processing usually takes 2-5 minutes depending on complexity. You&apos;ll receive a notification when extraction is complete and ready for your review.
                     </p>
                   </div>
                 </div>

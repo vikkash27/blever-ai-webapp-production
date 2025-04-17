@@ -8,9 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
+import Image from "next/image"; 
 import { 
   Building, 
-  Upload, 
   Edit, 
   MapPin, 
   Users, 
@@ -68,7 +68,7 @@ export default function CompanyOverviewPage() {
             <Building className="mx-auto h-12 w-12 text-slate-400 mb-4" />
             <h1 className="text-2xl font-bold text-slate-800 mb-2">No Organization Found</h1>
             <p className="text-slate-600 mb-6">
-              You're not currently part of any organization. Create or join an organization to access company features.
+              You&apos;re not currently part of any organization. Create or join an organization to access company features.
             </p>
             <Button 
               onClick={() => window.open("https://dashboard.clerk.com/", "_blank")}
@@ -91,7 +91,15 @@ export default function CompanyOverviewPage() {
           <div className="mb-4 relative group">
             <div className="w-32 h-32 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center border-4 border-white shadow-md">
               {logoPreview ? (
-                <img src={logoPreview} alt="Company Logo" className="w-full h-full object-cover" />
+                <div className="relative w-full h-full">
+                  <Image 
+                    src={logoPreview} 
+                    alt="Company Logo" 
+                    className="object-cover" 
+                    fill 
+                    sizes="128px"
+                  />
+                </div>
               ) : (
                 <Building className="h-16 w-16 text-slate-400" />
               )}
@@ -225,7 +233,7 @@ export default function CompanyOverviewPage() {
                   ) : (
                     <div className="space-y-4">
                       <p className="text-slate-600">
-                        Your company details will be displayed here once they've been added by an admin.
+                        Your company details will be displayed here once they&apos;ve been added by an admin.
                       </p>
                     </div>
                   )}
@@ -514,7 +522,7 @@ export default function CompanyOverviewPage() {
                       ESG Targets & Commitments
                     </CardTitle>
                     <CardDescription>
-                      Track your organization's ESG goals and progress
+                      Track your organization&apos;s ESG goals and progress
                     </CardDescription>
                   </div>
                   {isAdmin && (
