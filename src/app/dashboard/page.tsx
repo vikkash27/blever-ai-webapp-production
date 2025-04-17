@@ -37,7 +37,7 @@ export default function DashboardPage() {
 
       {/* Placeholder for What's Missing */}
       <div>
-        <h2>What's Missing</h2>
+        <h2>What&apos;s Missing</h2>
         <ul>
           <li>[Missing Data Point 1 Placeholder]</li>
           <li>[Missing Data Point 2 Placeholder]</li>
