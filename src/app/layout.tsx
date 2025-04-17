@@ -1,13 +1,13 @@
+import { ClerkProvider, UserButton } from '@clerk/nextjs'
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { ClerkProvider } from '@clerk/nextjs'; // Import ClerkProvider
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "BLever.AI",
-  description: "ESG Scoring Automation Platform",
+  title: "BLever.AI", // Updated Title
+  description: "ESG Scoring Automation Platform", // Updated Description
 };
 
 export default function RootLayout({
@@ -16,9 +16,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider> {/* Wrap the content with ClerkProvider */}
+    <ClerkProvider>
       <html lang="en">
-        <body className={inter.className}>{children}</body>
+        <body className={inter.className}>
+          <header style={{ padding: '1rem', borderBottom: '1px solid #ccc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h1>BLever.AI</h1>
+            <UserButton afterSignOutUrl="/"/>
+          </header>
+          <main>{children}</main>
+        </body>
       </html>
     </ClerkProvider>
   );
