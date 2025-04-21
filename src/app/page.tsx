@@ -10,7 +10,7 @@ import { ArrowRight, LineChart, ClipboardCheck, Globe, Building2 } from 'lucide-
 export default function HomePage() {
   const { isSignedIn, isLoaded } = useUser();
   const { signOut } = useClerk();
-  const router = useRouter();
+  
 
   // Force sign out users who arrive at the homepage
   useEffect(() => {

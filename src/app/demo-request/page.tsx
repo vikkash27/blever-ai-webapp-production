@@ -52,13 +52,13 @@ export default function DemoRequestPage() {
           <Card className="shadow-lg border-slate-200">
             <CardHeader className="text-center">
               <CardTitle className="text-3xl font-bold text-slate-800">Welcome aboard!</CardTitle>
-              <CardDescription className="text-xl mt-2">Let's get started with a personalized demo</CardDescription>
+              <CardDescription className="text-xl mt-2">Let&apos;'s get started with a personalized demo</CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
               <div className="text-center px-4 py-6">
                 <p className="text-slate-600 mb-4">
                   Thank you for creating an account{user?.firstName ? `, ${user.firstName}` : ''}! Before you can access the full platform, 
-                  we'd like to provide you with a personalized demonstration of our services and help you get properly onboarded.
+                  we&apos;'d like to provide you with a personalized demonstration of our services and help you get properly onboarded.
                 </p>
                 <p className="text-slate-600">
                   Please schedule a call with our team using the option below:
