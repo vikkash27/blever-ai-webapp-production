@@ -1,39 +1,49 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
+import { clerkClient } from '@clerk/nextjs/server';
+import { getAuth } from '@clerk/nextjs/server';
+import type { NextRequest } from 'next/server';
 
 // Define public routes that don't require authentication
-const isPublicRoute = createRouteMatcher([
+const publicPaths = [
   "/",
-  "/sign-in(.*)",
-  "/sign-up(.*)",
+  "/sign-in",
+  "/sign-up",
   "/demo-request"
-]);
+];
 
-// This function will be called for every request
-export default clerkMiddleware(async (auth, req) => {
+export async function middleware(request: NextRequest) {
   // Get current path
-  const path = req.nextUrl.pathname;
+  const path = request.nextUrl.pathname;
+  
+  // Check if the path is in the public paths
+  const isPublicPath = publicPaths.some(publicPath => {
+    if (publicPath === "/") return path === publicPath;
+    return path.startsWith(publicPath);
+  });
   
   // If it's a public route, allow access
-  if (isPublicRoute(req)) {
+  if (isPublicPath) {
     return NextResponse.next();
   }
   
+  // Get the auth context
+  const { userId, orgId } = getAuth(request);
+  
   // If user is not authenticated, redirect to sign-in
-  if (!auth.userId) {
-    const signInUrl = new URL('/sign-in', req.url);
-    signInUrl.searchParams.set('redirect_url', req.url);
+  if (!userId) {
+    const signInUrl = new URL('/sign-in', request.url);
+    signInUrl.searchParams.set('redirect_url', request.url);
     return NextResponse.redirect(signInUrl);
   }
   
   // If authenticated but no active organization, redirect to demo request
-  if (!auth.orgId && path !== '/demo-request') {
-    return NextResponse.redirect(new URL('/demo-request', req.url));
+  if (!orgId && path !== '/demo-request') {
+    return NextResponse.redirect(new URL('/demo-request', request.url));
   }
   
   // Otherwise, allow access
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [
