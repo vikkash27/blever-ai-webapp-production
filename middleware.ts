@@ -21,7 +21,7 @@ export default clerkMiddleware((auth, req) => {
   }
   
   // If user is not authenticated, redirect to sign-in
-  if (!auth.userId) {
+  if (!auth.isSignedIn) {
     const signInUrl = new URL('/sign-in', req.url);
     signInUrl.searchParams.set('redirect_url', req.url);
     return NextResponse.redirect(signInUrl);
@@ -29,7 +29,7 @@ export default clerkMiddleware((auth, req) => {
   
   // THE MOST IMPORTANT CHECK: If authenticated but no active organization, redirect to demo request
   // This is what prevents accessing the dashboard when no organization is selected
-  if (!auth.orgId && !isPublicRoute(req) && path !== '/demo-request') {
+  if (!auth.isActiveOrgMember && !isPublicRoute(req) && path !== '/demo-request') {
     return NextResponse.redirect(new URL('/demo-request', req.url));
   }
   
