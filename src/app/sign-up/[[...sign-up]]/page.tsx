@@ -32,8 +32,8 @@ export default function Page() {
                 <CalendarClock size={18} />
               </div>
               <div>
-                <h3 className="font-medium text-slate-800">Book a demo call</h3>
-                <p className="text-sm text-slate-600">Schedule a personalized onboarding session</p>
+                <h3 className="font-medium text-slate-800">Join an organization</h3>
+                <p className="text-sm text-slate-600">Select an organization to request access</p>
               </div>
             </div>
           </div>
@@ -50,7 +50,11 @@ export default function Page() {
             <SignUp 
               path="/sign-up"
               signInUrl="/sign-in"
-              redirectUrl="/demo-request" 
+              /* 
+               * We want to redirect to select-organization after sign-up to display
+               * the organization switcher for the user to join an organization
+               */
+              redirectUrl="/select-organization" 
               appearance={{
                 elements: {
                   rootBox: "w-full",

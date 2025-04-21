@@ -1,6 +1,5 @@
 'use client';
 
-import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -101,207 +100,205 @@ export default function DataManagementPage() {
   };
 
   return (
-    <AuthenticatedLayout>
-      <div className="container mx-auto py-6 px-4 md:px-8 space-y-8 max-w-7xl">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-800 mb-1">Data Management</h1>
-          <div className="flex gap-3">
-            <Button variant="outline" className="border-slate-300">
-              <Download className="mr-2 h-4 w-4" /> Export Data
-            </Button>
-          </div>
+    <div className="container mx-auto py-6 px-4 md:px-8 space-y-8 max-w-7xl">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-800 mb-1">Data Management</h1>
+        <div className="flex gap-3">
+          <Button variant="outline" className="border-slate-300">
+            <Download className="mr-2 h-4 w-4" /> Export Data
+          </Button>
         </div>
+      </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger 
-              value="upload" 
-              className={activeTab === "upload" ? "bg-slate-800 text-white data-[state=active]:bg-slate-800 data-[state=active]:text-white" : ""}
-            >
-              <FileUp className="mr-2 h-4 w-4" /> Upload Center
-            </TabsTrigger>
-            <TabsTrigger 
-              value="review" 
-              className={activeTab === "review" ? "bg-slate-800 text-white data-[state=active]:bg-slate-800 data-[state=active]:text-white" : ""}
-            >
-              <Search className="mr-2 h-4 w-4" /> Review Data
-            </TabsTrigger>
-          </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger 
+            value="upload" 
+            className={activeTab === "upload" ? "bg-slate-800 text-white data-[state=active]:bg-slate-800 data-[state=active]:text-white" : ""}
+          >
+            <FileUp className="mr-2 h-4 w-4" /> Upload Center
+          </TabsTrigger>
+          <TabsTrigger 
+            value="review" 
+            className={activeTab === "review" ? "bg-slate-800 text-white data-[state=active]:bg-slate-800 data-[state=active]:text-white" : ""}
+          >
+            <Search className="mr-2 h-4 w-4" /> Review Data
+          </TabsTrigger>
+        </TabsList>
 
-          {/* Upload Center Tab */}
-          <TabsContent value="upload" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Upload Documents</CardTitle>
-                <CardDescription>Upload your ESG-related documents here. Supported formats: PDF, CSV, JSON, XLSX.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Drag & Drop Area */}
-                <div className="border-2 border-dashed border-slate-200 rounded-lg p-10 text-center cursor-pointer hover:border-slate-400 transition-colors">
-                  <FileUp className="mx-auto h-10 w-10 text-slate-400 mb-4" />
-                  <p className="text-slate-600">Drag & drop files here, or click below</p>
-                  <Input id="file-upload" type="file" className="hidden" multiple />
-                  <Button variant="outline" className="mt-4" onClick={() => document.getElementById('file-upload')?.click()}>
-                    Browse Files
-                  </Button>
+        {/* Upload Center Tab */}
+        <TabsContent value="upload" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Upload Documents</CardTitle>
+              <CardDescription>Upload your ESG-related documents here. Supported formats: PDF, CSV, JSON, XLSX.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Drag & Drop Area */}
+              <div className="border-2 border-dashed border-slate-200 rounded-lg p-10 text-center cursor-pointer hover:border-slate-400 transition-colors">
+                <FileUp className="mx-auto h-10 w-10 text-slate-400 mb-4" />
+                <p className="text-slate-600">Drag & drop files here, or click below</p>
+                <Input id="file-upload" type="file" className="hidden" multiple />
+                <Button variant="outline" className="mt-4" onClick={() => document.getElementById('file-upload')?.click()}>
+                  Browse Files
+                </Button>
+              </div>
+
+              {/* Supported Formats Icons */}
+              <div className="flex justify-center space-x-8 text-slate-600">
+                <div className="flex items-center">
+                  <FileText className="h-5 w-5 mr-1 text-red-500" />
+                  <span>PDF</span>
+                </div>
+                <div className="flex items-center">
+                  <FileSpreadsheet className="h-5 w-5 mr-1 text-green-600" />
+                  <span>CSV</span>
+                </div>
+                <div className="flex items-center">
+                  <FileText className="h-5 w-5 mr-1 text-blue-500" />
+                  <span>JSON</span>
+                </div>
+                <div className="flex items-center">
+                  <FileSpreadsheet className="h-5 w-5 mr-1 text-blue-700" />
+                  <span>XLSX</span>
+                </div>
+              </div>
+
+              {/* Tagging Assistant Input */}
+              <div className="space-y-2">
+                <Label htmlFor="file-tag">Tag your upload (optional)</Label>
+                <Input 
+                  id="file-tag" 
+                  placeholder="e.g., Q1 Utility Bill, Board Charter 2024" 
+                  className="max-w-full"
+                />
+                <p className="text-sm text-slate-500">Help us categorize your document faster.</p>
+              </div>
+
+              {/* Uploaded Files Section */}
+              <div className="space-y-2">
+                <h3 className="text-lg font-medium">Uploaded Files</h3>
+                <div className="border rounded-md px-4 py-3 text-slate-500 text-sm">
+                  [List of uploaded files and their processing status will appear here]
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Review Data Tab */}
+        <TabsContent value="review" className="space-y-6">
+          {/* Data Table Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Data Table View</CardTitle>
+              <CardDescription>Review, filter, and manage your extracted ESG data points.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Filter Controls */}
+              <div className="flex flex-col md:flex-row gap-4 mb-6">
+                <div className="w-full md:w-64">
+                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                    <SelectTrigger>
+                      <div className="flex items-center">
+                        <Filter className="h-4 w-4 mr-2 text-slate-500" />
+                        <SelectValue placeholder="All Categories" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="environmental">Environmental</SelectItem>
+                      <SelectItem value="social">Social</SelectItem>
+                      <SelectItem value="governance">Governance</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                {/* Supported Formats Icons */}
-                <div className="flex justify-center space-x-8 text-slate-600">
-                  <div className="flex items-center">
-                    <FileText className="h-5 w-5 mr-1 text-red-500" />
-                    <span>PDF</span>
-                  </div>
-                  <div className="flex items-center">
-                    <FileSpreadsheet className="h-5 w-5 mr-1 text-green-600" />
-                    <span>CSV</span>
-                  </div>
-                  <div className="flex items-center">
-                    <FileText className="h-5 w-5 mr-1 text-blue-500" />
-                    <span>JSON</span>
-                  </div>
-                  <div className="flex items-center">
-                    <FileSpreadsheet className="h-5 w-5 mr-1 text-blue-700" />
-                    <span>XLSX</span>
-                  </div>
+                <div className="w-full md:w-64">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger>
+                      <div className="flex items-center">
+                        <Filter className="h-4 w-4 mr-2 text-slate-500" />
+                        <SelectValue placeholder="Filter by Status" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="ok">OK</SelectItem>
+                      <SelectItem value="missing">Missing</SelectItem>
+                      <SelectItem value="outdated">Outdated</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+              </div>
 
-                {/* Tagging Assistant Input */}
-                <div className="space-y-2">
-                  <Label htmlFor="file-tag">Tag your upload (optional)</Label>
-                  <Input 
-                    id="file-tag" 
-                    placeholder="e.g., Q1 Utility Bill, Board Charter 2024" 
-                    className="max-w-full"
-                  />
-                  <p className="text-sm text-slate-500">Help us categorize your document faster.</p>
-                </div>
-
-                {/* Uploaded Files Section */}
-                <div className="space-y-2">
-                  <h3 className="text-lg font-medium">Uploaded Files</h3>
-                  <div className="border rounded-md px-4 py-3 text-slate-500 text-sm">
-                    [List of uploaded files and their processing status will appear here]
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Review Data Tab */}
-          <TabsContent value="review" className="space-y-6">
-            {/* Data Table Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Data Table View</CardTitle>
-                <CardDescription>Review, filter, and manage your extracted ESG data points.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {/* Filter Controls */}
-                <div className="flex flex-col md:flex-row gap-4 mb-6">
-                  <div className="w-full md:w-64">
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger>
-                        <div className="flex items-center">
-                          <Filter className="h-4 w-4 mr-2 text-slate-500" />
-                          <SelectValue placeholder="All Categories" />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        <SelectItem value="environmental">Environmental</SelectItem>
-                        <SelectItem value="social">Social</SelectItem>
-                        <SelectItem value="governance">Governance</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="w-full md:w-64">
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger>
-                        <div className="flex items-center">
-                          <Filter className="h-4 w-4 mr-2 text-slate-500" />
-                          <SelectValue placeholder="Filter by Status" />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="ok">OK</SelectItem>
-                        <SelectItem value="missing">Missing</SelectItem>
-                        <SelectItem value="outdated">Outdated</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Data Table */}
-                <div className="rounded-md border overflow-hidden">
-                  <Table>
-                    <TableHeader className="bg-slate-50">
-                      <TableRow>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Field</TableHead>
-                        <TableHead>Value</TableHead>
-                        <TableHead>Source</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredData.length > 0 ? (
-                        filteredData.map((row) => (
-                          <TableRow key={row.id} className="hover:bg-slate-50">
-                            <TableCell className="font-medium">{row.category}</TableCell>
-                            <TableCell>{row.field}</TableCell>
-                            <TableCell>{row.value}</TableCell>
-                            <TableCell>{row.source}</TableCell>
-                            <TableCell>{row.date}</TableCell>
-                            <TableCell>{getStatusBadge(row.status)}</TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleEdit(row)}
-                                  className="h-8 px-2 text-slate-700"
-                                >
-                                  <EditIcon className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => setShowExtractionFeedback(true)}
-                                  className="h-8 px-2 text-blue-700"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="destructive" 
-                                  size="sm"
-                                  className="h-8 px-2"
-                                >
-                                  <Trash className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center">
-                            No results found.
+              {/* Data Table */}
+              <div className="rounded-md border overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-slate-50">
+                    <TableRow>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Field</TableHead>
+                      <TableHead>Value</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredData.length > 0 ? (
+                      filteredData.map((row) => (
+                        <TableRow key={row.id} className="hover:bg-slate-50">
+                          <TableCell className="font-medium">{row.category}</TableCell>
+                          <TableCell>{row.field}</TableCell>
+                          <TableCell>{row.value}</TableCell>
+                          <TableCell>{row.source}</TableCell>
+                          <TableCell>{row.date}</TableCell>
+                          <TableCell>{getStatusBadge(row.status)}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleEdit(row)}
+                                className="h-8 px-2 text-slate-700"
+                              >
+                                <EditIcon className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => setShowExtractionFeedback(true)}
+                                className="h-8 px-2 text-blue-700"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="destructive" 
+                                size="sm"
+                                className="h-8 px-2"
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={7} className="h-24 text-center">
+                          No results found.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Edit Field Dialog */}
       <Dialog open={editingItem !== null} onOpenChange={(open) => !open && setEditingItem(null)}>
@@ -469,6 +466,6 @@ export default function DataManagementPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </AuthenticatedLayout>
+    </div>
   );
 }
