@@ -1,10 +1,13 @@
 'use client';
 
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useOrganization } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import { 
   AlertTriangle, 
   TrendingUp, 
@@ -13,7 +16,12 @@ import {
   CalendarDays,
   LineChart,
   PieChart,
-  Building2
+  Building2,
+  Building,
+  MapPin,
+  Globe,
+  Edit,
+  ExternalLink
 } from "lucide-react";
 
 // Mock data (replace with actual data fetching later)
@@ -84,10 +92,63 @@ const mockData = {
   }
 };
 
-export default function DashboardPage() {
-  const { user, isLoaded } = useUser();
+// Define company data type
+type CompanyData = {
+  industry: string;
+  size: string;
+  description: string;
+  website: string;
+  foundedYear: string;
+  headquarters: string;
+  address: string;
+  country: string;
+  sector: string;
+  taxId: string;
+}
 
-  if (!isLoaded) {
+export default function DashboardPage() {
+  const { user, isLoaded: isUserLoaded } = useUser();
+  const { organization, isLoaded: isOrgLoaded } = useOrganization();
+  const router = useRouter();
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+  
+  // States for company data from Clerk metadata
+  const [companyData, setCompanyData] = useState<CompanyData | null>(null);
+  const [isCompanyProfileComplete, setIsCompanyProfileComplete] = useState(false);
+
+  // Safe redirection approach to avoid React errors
+  useEffect(() => {
+    if (isUserLoaded && isOrgLoaded) {
+      if (!organization) {
+        // Set state instead of directly calling router.push to avoid React errors
+        setShouldRedirect(true);
+      } else {
+        // Load company data from organization metadata
+        const metadata = organization.publicMetadata;
+        if (metadata.companyData) {
+          setCompanyData(metadata.companyData as CompanyData);
+          
+          // Check if essential company info is filled
+          const essentialFields = [
+            (metadata.companyData as CompanyData).industry,
+            (metadata.companyData as CompanyData).size,
+            (metadata.companyData as CompanyData).headquarters
+          ];
+          setIsCompanyProfileComplete(essentialFields.every(field => field && field.trim() !== ''));
+        }
+      }
+    }
+  }, [isUserLoaded, isOrgLoaded, organization]);
+
+  // Handle redirect in a separate effect to avoid rendering issues
+  useEffect(() => {
+    if (shouldRedirect) {
+      // Use window.location for a full page navigation instead of React router
+      window.location.href = '/demo-request';
+    }
+  }, [shouldRedirect]);
+
+  if (!isUserLoaded || !isOrgLoaded || shouldRedirect) {
     return (
       <AuthenticatedLayout>
         <div className="p-6">Loading...</div>
@@ -307,6 +368,12 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="px-6">
             <ul className="space-y-2 mb-4">
+              {!isCompanyProfileComplete && (
+                <li className="flex items-start gap-2 text-slate-700">
+                  <Info className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" /> 
+                  Complete your company profile information
+                </li>
+              )}
               {mockData.missingData.map((item, index) => (
                 <li key={index} className="flex items-start gap-2 text-slate-700">
                   <Info className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" /> 
@@ -315,6 +382,13 @@ export default function DashboardPage() {
               ))}
             </ul>
             <div className="flex flex-col sm:flex-row gap-3">
+              {!isCompanyProfileComplete && (
+                <Link href="/company">
+                  <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
+                    <Building className="mr-2 h-4 w-4" /> Complete Company Profile
+                  </Button>
+                </Link>
+              )}
               <Link href="/data-management">
                 <Button className="bg-amber-500 hover:bg-amber-600 text-white shadow-sm">
                   <ArrowRight className="mr-2 h-4 w-4" /> Upload Missing Data

@@ -44,10 +44,59 @@ const mockDocuments = [
 ];
 
 export default function CompanyOverviewPage() {
-  const { organization, membership } = useOrganization();
+  const { organization, membership, isLoaded } = useOrganization();
   const [activeTab, setActiveTab] = useState("overview");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const isAdmin = membership?.role === "admin";
+
+  // Form state
+  const [companyData, setCompanyData] = useState({
+    industry: "",
+    size: "",
+    description: "",
+    website: "",
+    foundedYear: "",
+    headquarters: "",
+    address: "",
+    country: "",
+    sector: "",
+    taxId: "",
+  });
+
+  // Contact form state
+  const [contacts, setContacts] = useState({
+    esgLead: { name: "", email: "", phone: "" },
+    sustainabilityManager: { name: "", email: "", phone: "" },
+    financeContact: { name: "", email: "", phone: "" }
+  });
+
+  // Handle form field changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setCompanyData(prev => ({
+      ...prev,
+      [id.replace('company-', '')]: value
+    }));
+  };
+
+  // Handle select field changes
+  const handleSelectChange = (value: string, field: string) => {
+    setCompanyData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Handle contact form changes
+  const handleContactChange = (contactType: 'esgLead' | 'sustainabilityManager' | 'financeContact', field: 'name' | 'email' | 'phone', value: string) => {
+    setContacts(prev => ({
+      ...prev,
+      [contactType]: {
+        ...prev[contactType],
+        [field]: value
+      }
+    }));
+  };
 
   // Handle logo file selection
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,11 +104,24 @@ export default function CompanyOverviewPage() {
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setLogoPreview(e.target?.result as string);
+        const result = e.target?.result as string;
+        setLogoPreview(result);
       };
       reader.readAsDataURL(file);
     }
   };
+
+  if (!isLoaded) {
+    return (
+      <AuthenticatedLayout>
+        <div className="container mx-auto py-8 px-4 flex items-center justify-center min-h-[50vh]">
+          <div className="text-center">
+            <p>Loading...</p>
+          </div>
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
 
   if (!organization) {
     return (
@@ -122,7 +184,7 @@ export default function CompanyOverviewPage() {
           <h1 className="text-3xl font-bold text-slate-800">{organization.name}</h1>
           <div className="flex items-center justify-center gap-3 mt-2 text-slate-600">
             <MapPin className="h-4 w-4" />
-            <span>Location details will appear here</span>
+            <span>{companyData.headquarters || "Location details will appear here"}</span>
           </div>
         </div>
         
@@ -157,22 +219,19 @@ export default function CompanyOverviewPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Building className="h-5 w-5 text-slate-700" /> 
-                    Company Profile
+                    Company Details
                   </CardTitle>
                   <CardDescription>
-                    Basic information about your organization
+                    Manage company-specific information like industry and size.
+                    Organization name and profile picture are managed in Organization Settings.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="company-name">Company Name</Label>
-                        <Input id="company-name" defaultValue={organization.name} />
-                      </div>
-                      <div className="space-y-2">
                         <Label htmlFor="company-industry">Industry</Label>
-                        <Select>
+                        <Select value={companyData.industry} onValueChange={(value) => handleSelectChange(value, 'industry')}>
                           <SelectTrigger id="company-industry">
                             <SelectValue placeholder="Select industry" />
                           </SelectTrigger>
@@ -188,30 +247,9 @@ export default function CompanyOverviewPage() {
                           </SelectContent>
                         </Select>
                       </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="company-description">Company Description</Label>
-                      <textarea 
-                        id="company-description" 
-                        placeholder="Describe your company, mission and values..."
-                        className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="company-website">Website</Label>
-                        <div className="flex">
-                          <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
-                            <Globe className="h-4 w-4 text-slate-500" />
-                          </div>
-                          <Input id="company-website" placeholder="www.example.com" className="rounded-l-none" />
-                        </div>
-                      </div>
                       <div className="space-y-2">
                         <Label htmlFor="company-size">Company Size</Label>
-                        <Select>
+                        <Select value={companyData.size} onValueChange={(value) => handleSelectChange(value, 'size')}>
                           <SelectTrigger id="company-size">
                             <SelectValue placeholder="Select company size" />
                           </SelectTrigger>
@@ -227,15 +265,57 @@ export default function CompanyOverviewPage() {
                         </Select>
                       </div>
                     </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="company-description">Company Description</Label>
+                      <textarea 
+                        id="company-description" 
+                        placeholder="Describe your company, mission and values..."
+                        className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={companyData.description}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="company-website">Website</Label>
+                        <div className="flex">
+                          <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
+                            <Globe className="h-4 w-4 text-slate-500" />
+                          </div>
+                          <Input 
+                            id="company-website" 
+                            placeholder="www.example.com" 
+                            className="rounded-l-none"
+                            value={companyData.website}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                      </div>
+                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="company-founded">Founded Year</Label>
-                        <Input id="company-founded" type="number" placeholder="e.g. 2010" min="1800" max="2099" />
+                        <Label htmlFor="company-foundedYear">Founded Year</Label>
+                        <Input 
+                          id="company-foundedYear" 
+                          type="number" 
+                          placeholder="e.g. 2010" 
+                          min="1800" 
+                          max="2099"
+                          value={companyData.foundedYear}
+                          onChange={handleInputChange}
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="company-headquarters">Headquarters</Label>
-                        <Input id="company-headquarters" placeholder="e.g. London, UK" />
+                        <Input 
+                          id="company-headquarters" 
+                          placeholder="e.g. London, UK"
+                          value={companyData.headquarters}
+                          onChange={handleInputChange}
+                        />
                       </div>
                     </div>
                     
@@ -245,13 +325,15 @@ export default function CompanyOverviewPage() {
                         id="company-address" 
                         placeholder="Enter your company's full address"
                         className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        value={companyData.address}
+                        onChange={handleInputChange}
                       />
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="company-country">Country</Label>
-                        <Select>
+                        <Select value={companyData.country} onValueChange={(value) => handleSelectChange(value, 'country')}>
                           <SelectTrigger id="company-country">
                             <SelectValue placeholder="Select country" />
                           </SelectTrigger>
@@ -266,7 +348,7 @@ export default function CompanyOverviewPage() {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="company-sector">Sector</Label>
-                        <Select>
+                        <Select value={companyData.sector} onValueChange={(value) => handleSelectChange(value, 'sector')}>
                           <SelectTrigger id="company-sector">
                             <SelectValue placeholder="Select sector" />
                           </SelectTrigger>
@@ -279,15 +361,14 @@ export default function CompanyOverviewPage() {
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="tax-id">Tax ID/Company Number</Label>
-                        <Input id="tax-id" placeholder="Enter company registration number" />
+                        <Label htmlFor="company-taxId">Tax ID/Company Number</Label>
+                        <Input 
+                          id="company-taxId" 
+                          placeholder="Enter company registration number"
+                          value={companyData.taxId}
+                          onChange={handleInputChange}
+                        />
                       </div>
-                    </div>
-
-                    <div className="flex justify-end">
-                      <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                        Save Company Details
-                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -302,7 +383,6 @@ export default function CompanyOverviewPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* SMEESG Score - New addition */}
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <Label className="text-sm text-slate-600">SMEESG Score</Label>
@@ -377,18 +457,32 @@ export default function CompanyOverviewPage() {
                   <div className="space-y-2">
                     <h3 className="font-medium">ESG Reporting Lead</h3>
                     <div className="space-y-2">
-                      <Input placeholder="Full Name" />
+                      <Input 
+                        placeholder="Full Name"
+                        value={contacts.esgLead.name}
+                        onChange={(e) => handleContactChange('esgLead', 'name', e.target.value)}
+                      />
                       <div className="flex">
                         <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
                           <Mail className="h-4 w-4 text-slate-500" />
                         </div>
-                        <Input placeholder="Email Address" className="rounded-l-none" />
+                        <Input 
+                          placeholder="Email Address" 
+                          className="rounded-l-none"
+                          value={contacts.esgLead.email}
+                          onChange={(e) => handleContactChange('esgLead', 'email', e.target.value)}
+                        />
                       </div>
                       <div className="flex">
                         <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
                           <Phone className="h-4 w-4 text-slate-500" />
                         </div>
-                        <Input placeholder="Phone Number" className="rounded-l-none" />
+                        <Input 
+                          placeholder="Phone Number" 
+                          className="rounded-l-none"
+                          value={contacts.esgLead.phone}
+                          onChange={(e) => handleContactChange('esgLead', 'phone', e.target.value)}
+                        />
                       </div>
                     </div>
                   </div>
@@ -396,18 +490,32 @@ export default function CompanyOverviewPage() {
                   <div className="space-y-2">
                     <h3 className="font-medium">Sustainability Manager</h3>
                     <div className="space-y-2">
-                      <Input placeholder="Full Name" />
+                      <Input 
+                        placeholder="Full Name"
+                        value={contacts.sustainabilityManager.name}
+                        onChange={(e) => handleContactChange('sustainabilityManager', 'name', e.target.value)}
+                      />
                       <div className="flex">
                         <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
                           <Mail className="h-4 w-4 text-slate-500" />
                         </div>
-                        <Input placeholder="Email Address" className="rounded-l-none" />
+                        <Input 
+                          placeholder="Email Address" 
+                          className="rounded-l-none"
+                          value={contacts.sustainabilityManager.email}
+                          onChange={(e) => handleContactChange('sustainabilityManager', 'email', e.target.value)}
+                        />
                       </div>
                       <div className="flex">
                         <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
                           <Phone className="h-4 w-4 text-slate-500" />
                         </div>
-                        <Input placeholder="Phone Number" className="rounded-l-none" />
+                        <Input 
+                          placeholder="Phone Number" 
+                          className="rounded-l-none"
+                          value={contacts.sustainabilityManager.phone}
+                          onChange={(e) => handleContactChange('sustainabilityManager', 'phone', e.target.value)}
+                        />
                       </div>
                     </div>
                   </div>
@@ -415,18 +523,32 @@ export default function CompanyOverviewPage() {
                   <div className="space-y-2">
                     <h3 className="font-medium">CFO/Finance Contact</h3>
                     <div className="space-y-2">
-                      <Input placeholder="Full Name" />
+                      <Input 
+                        placeholder="Full Name"
+                        value={contacts.financeContact.name}
+                        onChange={(e) => handleContactChange('financeContact', 'name', e.target.value)}
+                      />
                       <div className="flex">
                         <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
                           <Mail className="h-4 w-4 text-slate-500" />
                         </div>
-                        <Input placeholder="Email Address" className="rounded-l-none" />
+                        <Input 
+                          placeholder="Email Address" 
+                          className="rounded-l-none"
+                          value={contacts.financeContact.email}
+                          onChange={(e) => handleContactChange('financeContact', 'email', e.target.value)}
+                        />
                       </div>
                       <div className="flex">
                         <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
                           <Phone className="h-4 w-4 text-slate-500" />
                         </div>
-                        <Input placeholder="Phone Number" className="rounded-l-none" />
+                        <Input 
+                          placeholder="Phone Number" 
+                          className="rounded-l-none"
+                          value={contacts.financeContact.phone}
+                          onChange={(e) => handleContactChange('financeContact', 'phone', e.target.value)}
+                        />
                       </div>
                     </div>
                   </div>
@@ -443,13 +565,11 @@ export default function CompanyOverviewPage() {
                     Organization Settings
                   </CardTitle>
                   <CardDescription>
-                    Manage organization members, roles, and security settings
+                    Manage organization name, logo, members, roles, and security settings via Clerk.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="bg-slate-50 p-4 rounded-lg">
-                    <OrganizationProfile />
-                  </div>
+                  <OrganizationProfile />
                 </CardContent>
               </Card>
             )}
