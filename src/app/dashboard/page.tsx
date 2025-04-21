@@ -5,9 +5,8 @@ import { useUser, useOrganization } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import Image from "next/image";
+
 import { 
   AlertTriangle, 
   TrendingUp, 
@@ -18,10 +17,6 @@ import {
   PieChart,
   Building2,
   Building,
-  MapPin,
-  Globe,
-  Edit,
-  ExternalLink
 } from "lucide-react";
 
 // Mock data (replace with actual data fetching later)
@@ -109,11 +104,9 @@ type CompanyData = {
 export default function DashboardPage() {
   const { user, isLoaded: isUserLoaded } = useUser();
   const { organization, isLoaded: isOrgLoaded } = useOrganization();
-  const router = useRouter();
+
   const [shouldRedirect, setShouldRedirect] = useState(false);
   
-  // States for company data from Clerk metadata
-  const [companyData, setCompanyData] = useState<CompanyData | null>(null);
   const [isCompanyProfileComplete, setIsCompanyProfileComplete] = useState(false);
 
   // Safe redirection approach to avoid React errors
@@ -126,8 +119,6 @@ export default function DashboardPage() {
         // Load company data from organization metadata
         const metadata = organization.publicMetadata;
         if (metadata.companyData) {
-          setCompanyData(metadata.companyData as CompanyData);
-          
           // Check if essential company info is filled
           const essentialFields = [
             (metadata.companyData as CompanyData).industry,
