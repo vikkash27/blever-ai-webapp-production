@@ -1,58 +1,72 @@
-import { authMiddleware } from "@clerk/nextjs";
 import { NextResponse } from 'next/server';
+import { getAuth } from '@clerk/nextjs/server';
+import type { NextRequest } from 'next/server';
 
-// This function will be called for every request
-export default authMiddleware({
-  // Public routes that don't require authentication
-  publicRoutes: [
-    "/",
-    "/sign-in(.*)",
-    "/sign-up(.*)",
-    "/demo-request"
-  ],
+// Define public routes that don't require authentication
+const publicPaths = [
+  "/sign-in",
+  "/sign-up", 
+  "/demo-request"
+];
+
+// Define authentication exempt paths (no redirects needed)
+const authExemptPaths = [
+  "/_next",
+  "/favicon.ico",
+  // Add other static assets paths if needed
+];
+
+export async function middleware(request: NextRequest) {
+  // Get current path
+  const path = request.nextUrl.pathname;
   
-  // Function to run after Clerk's auth middleware
-  afterAuth(auth, req) {
-    // Get current path
-    const url = req.nextUrl;
-    const path = url.pathname;
-    
-    // If it's a public route, allow access
-    if (isPublicRoute(path)) {
-      return NextResponse.next();
-    }
-    
-    // If user is not authenticated, redirect to sign-in
-    if (!auth.userId) {
-      const signInUrl = new URL('/sign-in', req.url);
-      signInUrl.searchParams.set('redirect_url', req.url);
-      return NextResponse.redirect(signInUrl);
-    }
-    
-    // THE MOST IMPORTANT CHECK: If authenticated but no active organization, redirect to demo request
-    // This is what prevents accessing the dashboard when no organization is selected
-    if (!auth.orgId && !isPublicRoute(path) && path !== '/demo-request') {
-      return NextResponse.redirect(new URL('/demo-request', req.url));
-    }
-    
-    // Otherwise, allow access
+  // Skip middleware for exempt paths
+  if (authExemptPaths.some(exemptPath => path.startsWith(exemptPath))) {
     return NextResponse.next();
   }
-});
-
-// Helper function to check if a path matches public routes
-function isPublicRoute(path) {
-  const publicPaths = ["/", "/sign-in", "/sign-up", "/demo-request"];
-  if (publicPaths.includes(path)) return true;
-  if (path.startsWith("/sign-in/")) return true;
-  if (path.startsWith("/sign-up/")) return true;
-  return false;
+  
+  // Get the auth context
+  const { userId, orgId } = getAuth(request);
+  
+  // Check if the path is in the public paths
+  const isPublicPath = publicPaths.some(publicPath => 
+    path.startsWith(publicPath)
+  );
+  
+  // If it's the root path ("/") and user is authenticated
+  if (path === "/" && userId) {
+    // If user has an org, redirect to dashboard
+    if (orgId) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+    // If user has no org, redirect to demo request
+    else {
+      return NextResponse.redirect(new URL('/demo-request', request.url));
+    }
+  }
+  
+  // If user is not authenticated and trying to access protected route
+  if (!userId && !isPublicPath) {
+    const signInUrl = new URL('/sign-in', request.url);
+    signInUrl.searchParams.set('redirect_url', request.url);
+    return NextResponse.redirect(signInUrl);
+  }
+  
+  // If authenticated but no active organization and trying to access protected route
+  if (userId && !orgId && !isPublicPath && path !== '/demo-request') {
+    return NextResponse.redirect(new URL('/demo-request', request.url));
+  }
+  
+  // Allow access to all other routes based on the rules above
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    // Match all paths except static files, api routes, and _next internal paths
-    "/((?!_next/image|_next/static|favicon.ico|.*\\.svg$).*)",
+    // Match all routes except static assets
+    '/((?!.*\\.(ico|jpg|jpeg|png|gif|svg|js|css|ttf|otf|woff|woff2|map)).*)',
+    '/',
+    '/(api|trpc)(.*)',
   ],
 };
 

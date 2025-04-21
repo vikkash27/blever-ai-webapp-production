@@ -12,7 +12,7 @@ export default function Page() {
           <div>
             <h1 className="text-3xl font-bold text-slate-800">Create your account</h1>
             <p className="text-slate-600 mt-2">
-              Join our platform to discover how we can help your organization's ESG journey
+              Join our platform to discover how we can help your organization&apos;s ESG journey
             </p>
           </div>
 

@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { useUser, useClerk } from "@clerk/nextjs";
-import { useRouter } from 'next/navigation'; // Use next/navigation for App Router
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowRight, LineChart, ClipboardCheck, Globe, Building2 } from 'lucide-react';
@@ -10,7 +9,7 @@ import { ArrowRight, LineChart, ClipboardCheck, Globe, Building2 } from 'lucide-
 export default function HomePage() {
   const { isSignedIn, isLoaded } = useUser();
   const { signOut } = useClerk();
-  const router = useRouter();
+  
 
   // Force sign out users who arrive at the homepage
   useEffect(() => {
