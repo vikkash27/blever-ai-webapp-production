@@ -63,10 +63,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all routes except static assets
-    '/((?!.*\\.(ico|jpg|jpeg|png|gif|svg|js|css|ttf|otf|woff|woff2|map)).*)',
+    // Match all paths except those starting with static asset extensions
+    '/((?!_next|api|trpc).*)',
     '/',
-    '/(api|trpc)(.*)',
   ],
 };
 
