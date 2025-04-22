@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser, UserButton } from '@clerk/nextjs';
+import { useUser, UserButton, OrganizationSwitcher } from '@clerk/nextjs';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -8,9 +8,9 @@ import {
   LayoutDashboard, 
   Database, 
   FileUp, 
-  Building,
   Menu,
-  X
+  X,
+  Building2
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -19,8 +19,8 @@ import { cn } from '@/lib/utils';
 const navigationItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Data Management', href: '/data-management', icon: Database },
+  { name: 'My Company', href: '/my-company', icon: Building2 },
   { name: 'Upload Guide', href: '/upload-guide', icon: FileUp },
-  { name: 'Company', href: '/company', icon: Building },
 ];
 
 export default function NavigationBar() {
@@ -66,6 +66,16 @@ export default function NavigationBar() {
               })}
             </nav>
             
+            {/* Organization Switcher */}
+            <OrganizationSwitcher 
+              hidePersonal 
+              appearance={{
+                elements: {
+                  organizationSwitcherTrigger: "py-2 px-3 flex items-center gap-2 rounded-md border border-slate-200 hover:bg-slate-50 transition-colors"
+                }
+              }}
+            />
+            
             {/* User button - Profile dropdown */}
             <UserButton afterSignOutUrl="/" />
           </div>
@@ -110,6 +120,20 @@ export default function NavigationBar() {
                 </Link>
               );
             })}
+            
+            {/* Mobile Organization Switcher */}
+            <div className="px-3 py-2">
+              <div className="text-sm font-medium text-slate-600 mb-1">Organization</div>
+              <OrganizationSwitcher
+                hidePersonal
+                appearance={{
+                  elements: {
+                    organizationSwitcherTrigger: "w-full flex items-center justify-between py-2 px-3 rounded-md border border-slate-200 hover:bg-slate-50 transition-colors",
+                    organizationPreviewTextContainer: "text-sm"
+                  }
+                }}
+              />
+            </div>
             
             {/* Mobile user info */}
             <div className="border-t border-slate-200 pt-4 flex items-center px-3">

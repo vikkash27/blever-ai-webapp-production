@@ -51,8 +51,7 @@ export default function Page() {
               path="/sign-up"
               signInUrl="/sign-in"
               /* 
-               * We want to redirect to select-organization after sign-up to display
-               * the organization switcher for the user to join an organization
+               * Redirecting to organization selection page after sign-up
                */
               redirectUrl="/select-organization" 
               appearance={{

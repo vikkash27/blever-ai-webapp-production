@@ -1,10 +1,12 @@
 'use client';
 
-import { useUser } from "@clerk/nextjs";
+import { useEffect, useState } from "react";
+import { useUser, useOrganization } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { 
   AlertTriangle, 
@@ -15,7 +17,7 @@ import {
   LineChart,
   PieChart,
   Building2,
-  Building,
+  ShieldAlert,
 } from "lucide-react";
 
 // Mock data (replace with actual data fetching later)
@@ -87,12 +89,90 @@ const mockData = {
 };
 
 export default function DashboardPage() {
-  const { user, isLoaded } = useUser();
-  const [isCompanyProfileComplete] = useState(true); // Removed setIsCompanyProfileComplete
+  const { user, isLoaded: isUserLoaded } = useUser();
+  const { organization, isLoaded: isOrgLoaded } = useOrganization();
+  const router = useRouter();
+  const [accessChecked, setAccessChecked] = useState(false);
+  const [hasAccess, setHasAccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Show loading state if user data is still loading
-  if (!isLoaded) {
-    return <div className="flex items-center justify-center h-full">Loading...</div>;
+  // Check if user's organization has access permission
+  useEffect(() => {
+    if (isUserLoaded && isOrgLoaded) {
+      if (!organization) {
+        // No organization selected, redirect to organization selection
+        router.push("/select-organization");
+        return;
+      }
+
+      // Check if organization has access permission
+      const publicMetadata = organization.publicMetadata || {};
+      
+      // Handle different ways the access value could be stored
+      let accessValue = publicMetadata.access;
+      
+      // If access is stored as a JSON string, parse it
+      if (typeof accessValue === 'string' && (accessValue.toLowerCase() === 'true' || accessValue.toLowerCase() === 'false')) {
+        accessValue = accessValue.toLowerCase() === 'true';
+      }
+      
+      // Check for boolean true or string "true" (case insensitive)
+      const hasAccessPermission = accessValue === true || 
+        (typeof accessValue === 'string' && accessValue.toLowerCase() === 'true');
+      
+      console.log("Organization access check:", {
+        orgId: organization.id,
+        orgName: organization.name,
+        accessValue,
+        hasPermission: hasAccessPermission
+      });
+
+      setHasAccess(hasAccessPermission);
+      setAccessChecked(true);
+      setIsLoading(false);
+
+      // If no access, redirect to organization selection after a brief delay
+      if (!hasAccessPermission) {
+        setTimeout(() => {
+          router.push("/select-organization");
+        }, 3000);
+      }
+    }
+  }, [isUserLoaded, isOrgLoaded, organization, router]);
+
+  // Show loading state if data is still loading
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Verifying access permissions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show access denied if the organization doesn't have access
+  if (accessChecked && !hasAccess) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-screen p-4">
+        <div className="max-w-md w-full">
+          <Alert className="bg-red-50 border-red-200 mb-6">
+            <ShieldAlert className="h-5 w-5 text-red-600" />
+            <AlertTitle className="text-red-700">Access Denied</AlertTitle>
+            <AlertDescription className="text-red-600">
+              Your organization does not have access to the dashboard. You will be redirected to the organization selection page.
+            </AlertDescription>
+          </Alert>
+          <Button 
+            onClick={() => router.push('/select-organization')} 
+            className="w-full"
+          >
+            Return to Organization Selection
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -306,12 +386,6 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent className="px-6">
           <ul className="space-y-2 mb-4">
-            {!isCompanyProfileComplete && (
-              <li className="flex items-start gap-2 text-slate-700">
-                <Info className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" /> 
-                Complete your company profile information
-              </li>
-            )}
             {mockData.missingData.map((item, index) => (
               <li key={index} className="flex items-start gap-2 text-slate-700">
                 <Info className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" /> 
@@ -320,13 +394,6 @@ export default function DashboardPage() {
             ))}
           </ul>
           <div className="flex flex-col sm:flex-row gap-3">
-            {!isCompanyProfileComplete && (
-              <Link href="/company">
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
-                  <Building className="mr-2 h-4 w-4" /> Complete Company Profile
-                </Button>
-              </Link>
-            )}
             <Link href="/data-management">
               <Button className="bg-amber-500 hover:bg-amber-600 text-white shadow-sm">
                 <ArrowRight className="mr-2 h-4 w-4" /> Upload Missing Data

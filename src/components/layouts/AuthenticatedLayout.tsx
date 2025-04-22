@@ -27,9 +27,6 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
             <Link href="/upload-guide" className="transition-colors hover:text-foreground/80 text-foreground/60">
               Upload Guide
             </Link>
-            <Link href="/company" className="transition-colors hover:text-foreground/80 text-foreground/60">
-              My Company
-            </Link>
           </nav>
           {/* Clerk Components Right-Aligned */}
           <div className="flex items-center space-x-4 ml-4">

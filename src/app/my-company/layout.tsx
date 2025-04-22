@@ -2,7 +2,7 @@
 
 import ProtectedLayout from '@/components/layouts/ProtectedLayout';
 
-export default function CompanyLayout({
+export default function MyCompanyLayout({
   children,
 }: {
   children: React.ReactNode;

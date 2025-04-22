@@ -8,7 +8,6 @@ import {
   LayoutDashboard, 
   Database, 
   FileUp, 
-  Building,
   Menu,
   X
 } from 'lucide-react';
@@ -20,7 +19,6 @@ const navigationItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Data Management', href: '/data-management', icon: Database },
   { name: 'Upload Guide', href: '/upload-guide', icon: FileUp },
-  { name: 'Company', href: '/company', icon: Building },
 ];
 
 export default function ProtectedLayout({

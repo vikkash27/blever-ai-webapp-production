@@ -41,9 +41,9 @@ export default function Page() {
               path="/sign-in"
               signUpUrl="/sign-up"
               /* 
-               * We'll let middleware handle redirects based on authorization status
-               * rather than hardcoding the redirectUrl here
+               * Explicitly redirect to organization selection page after sign-in
                */
+              redirectUrl="/select-organization"
               appearance={{
                 elements: {
                   rootBox: "w-full",

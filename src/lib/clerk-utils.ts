@@ -7,6 +7,7 @@ interface OrganizationMembership {
     id: string;
     name: string;
     slug?: string;
+    publicMetadata?: Record<string, unknown>;
   };
   role: string;
 }
@@ -46,5 +47,48 @@ export async function checkUserOrganizations() {
   } catch (error) {
     console.error("Error checking user organizations:", error);
     return { hasOrganization: false, error };
+  }
+}
+
+/**
+ * Checks if an organization has access permission based on its public metadata
+ * @param orgId The organization ID to check
+ * @returns Boolean indicating if the organization has access
+ */
+export async function checkOrganizationAccess(orgId: string | null): Promise<boolean> {
+  if (!orgId) return false;
+  
+  try {
+    // Get the current user from Clerk
+    const user = await currentUser();
+    
+    if (!user) return false;
+    
+    // Find the organization membership for the given org ID
+    const orgMembership = (user as unknown as ExtendedUser).organizationMemberships?.find(
+      (membership) => membership.organization.id === orgId
+    );
+    
+    if (!orgMembership) return false;
+    
+    // Access the organization's public metadata
+    const publicMetadata = orgMembership.organization.publicMetadata || {};
+    
+    // Handle different ways the access value could be stored
+    let accessValue = publicMetadata.access;
+    
+    // If access is stored as a JSON string, parse it
+    if (typeof accessValue === 'string' && (accessValue.toLowerCase() === 'true' || accessValue.toLowerCase() === 'false')) {
+      accessValue = accessValue.toLowerCase() === 'true';
+    }
+    
+    // Check for boolean true or string "true" (case insensitive)
+    const hasAccessPermission = accessValue === true || 
+      (typeof accessValue === 'string' && accessValue.toLowerCase() === 'true');
+    
+    return hasAccessPermission;
+  } catch (error) {
+    console.error("Error checking organization access:", error);
+    return false;
   }
 }
