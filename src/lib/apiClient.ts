@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { getApiUrl } from './utils';
 
 // Define error types for consistent handling
 export type ApiError = {
@@ -8,7 +9,7 @@ export type ApiError = {
 };
 
 // API base URL - centralized for easy configuration
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api';
+export const API_BASE_URL = getApiUrl() + '/api';
 
 // Fetch options with custom headers
 type FetchOptions = RequestInit & {

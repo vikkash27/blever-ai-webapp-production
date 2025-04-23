@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
+import { getApiUrl } from './utils';
 
-const API_BASE_URL = 'http://localhost:3001';
+const API_BASE_URL = getApiUrl();
 
 type APIOptions = {
   method?: string;

@@ -16,6 +16,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
+import { getApiEndpoint } from '@/lib/utils';
 
 // Define score data types
 type EsgScore = {
@@ -183,7 +184,7 @@ export default function DashboardPage() {
     
     try {
       // Fetch ESG scores using the helper
-      const response = await get(`http://localhost:3001/api/esg/scores`);
+      const response = await get(getApiEndpoint('/api/esg/scores'));
       console.log("Dashboard API response:", response); // Log response for debugging
       
       // Transform API response to match expected EsgScore format
@@ -241,7 +242,7 @@ export default function DashboardPage() {
       }
       
       // Fetch recommendations
-      const recsData = await get(`http://localhost:3001/api/esg/recommendations`);
+      const recsData = await get(getApiEndpoint('/api/esg/recommendations'));
       
       // Handle the new recommendations structure
       if (recsData.success && recsData.data) {
@@ -251,7 +252,7 @@ export default function DashboardPage() {
       }
 
       // Fetch missing metrics
-      const missingMetricsData = await get(`http://localhost:3001/api/esg/metrics/missing`);
+      const missingMetricsData = await get(getApiEndpoint('/api/esg/metrics/missing'));
       
       if (missingMetricsData.success) {
         setMissingMetrics(missingMetricsData);
@@ -260,7 +261,7 @@ export default function DashboardPage() {
       }
       
       // Fetch scoring queue status
-      const scoringQueueData = await get(`http://localhost:3001/api/esg/scoring-queue-status`);
+      const scoringQueueData = await get(getApiEndpoint('/api/esg/scoring-queue-status'));
       
       if (scoringQueueData.success) {
         setScoringStatus(scoringQueueData);

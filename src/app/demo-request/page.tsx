@@ -11,6 +11,7 @@ import { Calendar, ArrowRight, ArrowLeft, Building, CheckCircle } from "lucide-r
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { getApiEndpoint } from '@/lib/utils';
 
 const industries = [
   { value: "technology", label: "Technology" },
@@ -102,7 +103,7 @@ export default function DemoRequestPage() {
       }
 
       // Submit organization data to your backend
-      const response = await fetch("http://localhost:3001/api/organizations/current", {
+      const response = await fetch(getApiEndpoint("/api/organizations/current"), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

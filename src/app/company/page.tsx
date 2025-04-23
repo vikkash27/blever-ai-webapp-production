@@ -22,6 +22,7 @@ import {
   Save
 } from "lucide-react";
 import { useApiAuth } from "@/hooks/useApiAuth";
+import { getApiEndpoint } from '@/lib/utils';
 
 // Define score data types - matching the format from the dashboard
 type EsgScore = {
@@ -193,7 +194,7 @@ export default function CompanyOverviewPage() {
     
     try {
       // Fetch ESG scores using the helper
-      const response = await get(`http://localhost:3001/api/esg/scores`);
+      const response = await get(getApiEndpoint('/api/esg/scores'));
       console.log("API response:", response); // Log the actual response for debugging
       
       // Transform the API response to match the expected EsgScore format

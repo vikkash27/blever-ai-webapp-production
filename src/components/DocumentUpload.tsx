@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Upload, AlertCircle, Check, X, Clock, Loader2, FileIcon } from 'lucide-react';
+import { getApiEndpoint } from '@/lib/utils';
 
 const documentTypes = [
   { value: 'annual_report', label: 'Annual Report' },
@@ -94,7 +95,7 @@ export default function DocumentUpload() {
         formData.append('files', file);
       });
 
-      const response = await fetch(`http://localhost:3001/api/documents?organizationId=${organization.id}`, {
+      const response = await fetch(getApiEndpoint(`/api/documents?organizationId=${organization.id}`), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

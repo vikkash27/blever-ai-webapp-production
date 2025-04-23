@@ -1,4 +1,5 @@
-import { WebhookEvent } from "@clerk/nextjs/server";
+import { WebhookEvent } from '@clerk/nextjs/server';
+import { getApiEndpoint } from '@/lib/utils';
 
 // Get the webhook secret from environment variables
 const CLERK_WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET || '';
@@ -18,12 +19,12 @@ export async function POST(req: Request) {
         // Add any other fields needed by your backend
       };
 
-      // Send to your backend API with authentication
-      const response = await fetch("http://localhost:3001/api/organizations/sync", {
-        method: "POST",
+      // Forward the webhook to the API
+      const response = await fetch(getApiEndpoint("/api/organizations/sync"), {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${BACKEND_API_KEY}`
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${BACKEND_API_KEY}`,
         },
         body: JSON.stringify(orgData),
       });

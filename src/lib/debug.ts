@@ -1,35 +1,47 @@
 import { auth } from "@clerk/nextjs/server";
 import { createApiClient } from "./api";
+import { getApiEndpoint } from '@/lib/utils';
 
 export async function debugAuth() {
-  const { orgId, userId } = await auth();
-  
-  if (!orgId) {
-    return { error: "No organization selected", userId };
-  }
-
-  const api = await createApiClient(orgId);
-  
   try {
-    // Call your debug endpoint
-    const response = await fetch(`http://localhost:3001/api/debug/auth?organizationId=${orgId}`, {
-      headers: {
-        'Authorization': `Bearer ${await (await auth()).getToken()}`
-      }
-    });
+    // Get the current auth
+    const session = await auth();
+    const orgId = session.orgId;
     
-    if (!response.ok) {
-      throw new Error(`Auth debugging failed: ${response.status}`);
+    // Don't proceed if we don't have an organization
+    if (!orgId) {
+      return {
+        success: false,
+        message: "No organization selected"
+      };
     }
     
-    return await response.json();
+    try {
+      // Call your debug endpoint
+      const response = await fetch(getApiEndpoint(`/api/debug/auth?organizationId=${orgId}`), {
+        headers: {
+          'Authorization': `Bearer ${await session.getToken()}`
+        }
+      });
+      
+      const data = await response.json();
+      
+      return {
+        success: response.ok,
+        data
+      };
+    } catch (error) {
+      console.error("API error:", error);
+      return {
+        success: false,
+        message: "API Error"
+      };
+    }
   } catch (error) {
-    console.error("Auth debugging error:", error);
-    return { 
-      error: "Failed to debug authentication", 
-      details: error instanceof Error ? error.message : String(error),
-      userId,
-      orgId 
+    console.error("Auth error:", error);
+    return {
+      success: false,
+      message: "Auth Error"
     };
   }
 }
@@ -68,5 +80,16 @@ export async function checkAuthStatus() {
       issue: 'auth_error',
       message: error instanceof Error ? error.message : 'Unknown authentication error'
     };
+  }
+}
+
+export async function testServerAuth(orgId: string, token: string) {
+  try {
+    const response = await fetch(getApiEndpoint(`/api/debug/auth?organizationId=${orgId}`), {
+      // ... rest of the fetch parameters ...
+    });
+    // ... rest of the function ...
+  } catch (error) {
+    // ... error handling ...
   }
 } 

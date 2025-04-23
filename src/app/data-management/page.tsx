@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertCircle, FileText, Loader2, Search, Trash2, FileCheck, Upload } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
+import { getApiEndpoint } from '@/lib/utils';
 
 // Document type with all the properties
 type Document = {
@@ -102,7 +103,7 @@ export default function DataManagementPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`http://localhost:3001/api/documents?organizationId=${organization?.id}`, {
+      const response = await fetch(getApiEndpoint(`/api/documents?organizationId=${organization?.id}`), {
         headers: {
           'Authorization': `Bearer ${token}`,
         }
@@ -170,7 +171,7 @@ export default function DataManagementPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/documents/${id}?organizationId=${organization?.id}`, {
+      const response = await fetch(getApiEndpoint(`/api/documents/${id}?organizationId=${organization?.id}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -194,7 +195,7 @@ export default function DataManagementPage() {
 
   const handleExtractMetrics = async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/esg/documents/${id}/extract?organizationId=${organization?.id}`, {
+      const response = await fetch(getApiEndpoint(`/api/esg/documents/${id}/extract?organizationId=${organization?.id}`), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
