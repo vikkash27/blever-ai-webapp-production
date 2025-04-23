@@ -346,9 +346,6 @@ export default function DashboardPage() {
                 <ArrowRight className="mr-2 h-4 w-4" /> Upload Missing Data
               </Button>
             </Link>
-            <Button variant="outline" className="border-emerald-600 text-emerald-700 hover:bg-emerald-50">
-              <TrendingUp className="mr-2 h-4 w-4" /> Improve Score
-            </Button>
           </div>
         </div>
 

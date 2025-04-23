@@ -23,7 +23,6 @@ export default function DocumentUpload() {
   const { organization } = useOrganization();
   const { getToken } = useAuth();
   const [files, setFiles] = useState<File[]>([]);
-  const [documentType, setDocumentType] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
@@ -58,8 +57,20 @@ export default function DocumentUpload() {
   };
 
   const handleUpload = async () => {
-    if (!files.length || !documentType) {
-      setErrorMessage('Please select both files and document type');
+    if (!files.length) {
+      setErrorMessage('Please select files to upload');
+      return;
+    }
+
+    if (files.length > 10) {
+      setErrorMessage('Maximum 10 documents can be uploaded at once');
+      return;
+    }
+
+    // Check file sizes
+    const oversizedFiles = files.filter(file => file.size > 10 * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
+      setErrorMessage(`Some files exceed the 10MB limit: ${oversizedFiles.map(f => f.name).join(', ')}`);
       return;
     }
 
@@ -82,7 +93,6 @@ export default function DocumentUpload() {
       files.forEach(file => {
         formData.append('files', file);
       });
-      formData.append('documentType', documentType);
 
       const response = await fetch(`http://localhost:3001/api/documents?organizationId=${organization.id}`, {
         method: 'POST',
@@ -108,7 +118,6 @@ export default function DocumentUpload() {
 
       setUploadStatus('success');
       setFiles([]);
-      setDocumentType('');
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -184,22 +193,6 @@ export default function DocumentUpload() {
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="document-type">Document Type</Label>
-          <Select value={documentType} onValueChange={setDocumentType}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select document type" />
-            </SelectTrigger>
-            <SelectContent>
-              {documentTypes.map((type) => (
-                <SelectItem key={type.value} value={type.value}>
-                  {type.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
           <Label htmlFor="file-upload">Upload Files</Label>
           <div className="border-2 border-dashed border-slate-200 rounded-md p-6 text-center hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => fileInputRef.current?.click()}>
             <Input
@@ -213,7 +206,8 @@ export default function DocumentUpload() {
             />
             <Upload className="h-8 w-8 text-slate-400 mx-auto mb-2" />
             <p className="text-sm text-slate-600">Click to upload or drag and drop</p>
-            <p className="text-xs text-slate-500 mt-1">PDF, CSV, XLSX, JSON, DOC, DOCX (Max 10MB)</p>
+            <p className="text-xs text-slate-500 mt-1">PDF, CSV, XLSX, JSON, DOC, DOCX</p>
+            <p className="text-xs text-slate-500 mt-1">Maximum 10 files, 10MB per file</p>
           </div>
         </div>
 
@@ -247,7 +241,7 @@ export default function DocumentUpload() {
         <Button 
           className="w-full bg-emerald-600 hover:bg-emerald-700" 
           onClick={handleUpload}
-          disabled={files.length === 0 || !documentType || uploading || scoringInProgress}
+          disabled={files.length === 0 || uploading || scoringInProgress}
         >
           {uploading ? (
             <>

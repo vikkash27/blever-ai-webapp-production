@@ -337,14 +337,16 @@ export default function DataManagementPage() {
                       <>
                         <p className="text-slate-500 mb-2">You haven't uploaded any documents yet</p>
                         <p className="text-slate-500 mb-6">Upload ESG-related documents to get insights and improve your score</p>
-                        <div className="flex items-center justify-center gap-4">
-                          <Button 
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                            onClick={() => document.querySelector('.upload-section button')?.scrollIntoView({ behavior: 'smooth' })}
-                          >
-                            <Upload className="mr-2 h-4 w-4" /> Upload your first document
-                          </Button>
-                        </div>
+                        {activeTab === 'all' && (
+                          <div className="flex items-center justify-center gap-4">
+                            <Button 
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                              onClick={() => document.querySelector('.upload-section')?.scrollIntoView({ behavior: 'smooth' })}
+                            >
+                              <Upload className="mr-2 h-4 w-4" /> Upload your first document
+                            </Button>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
