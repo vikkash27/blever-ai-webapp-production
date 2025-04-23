@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useOrganization, useAuth } from '@clerk/nextjs';
 import AuthenticatedLayout from '@/components/layouts/AuthenticatedLayout';
 import DocumentUpload from '@/components/DocumentUpload';
@@ -55,6 +55,10 @@ export default function DataManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [token, setToken] = useState<string | null>(null);
+  const [hasFetched, setHasFetched] = useState(false);
+  const fetchInProgress = useRef(false);
+  const [errorRetryCount, setErrorRetryCount] = useState(0);
+  const lastErrorTime = useRef<number | null>(null);
 
   useEffect(() => {
     // Fetch the token when the component mounts
@@ -72,14 +76,30 @@ export default function DataManagementPage() {
   }, [getToken]);
 
   useEffect(() => {
-    if (organization?.id && token) {
+    if (organization?.id && token && !hasFetched) {
       fetchDocuments();
     }
-  }, [organization?.id, token]);
+  }, [organization?.id, token, hasFetched]);
 
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
+    // Prevent multiple concurrent fetch requests
+    if (fetchInProgress.current) return;
+    if (!organization?.id || !token) return;
+    
+    // Implement exponential backoff for errors
+    if (errorRetryCount > 0 && lastErrorTime.current) {
+      const now = Date.now();
+      const timeSinceLastError = now - lastErrorTime.current;
+      const retryDelay = Math.min(30000, 1000 * Math.pow(2, errorRetryCount));
+      
+      if (timeSinceLastError < retryDelay) {
+        console.log(`Waiting ${(retryDelay - timeSinceLastError)/1000}s before retry. Attempt: ${errorRetryCount}`);
+        return; // Don't retry yet
+      }
+    }
+    
+    fetchInProgress.current = true;
     setLoading(true);
-    setError('');
 
     try {
       const response = await fetch(`http://localhost:3001/api/documents?organizationId=${organization?.id}`, {
@@ -111,12 +131,30 @@ export default function DataManagementPage() {
       }));
       
       setDocuments(transformedDocs);
+      setError(''); // Clear any previous errors
+      setErrorRetryCount(0); // Reset retry count on success
+      setHasFetched(true); // Mark as fetched to prevent repeated requests
     } catch (err) {
       console.error('Error fetching documents:', err);
-      setError('Failed to load documents. Please try again later.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load documents. Please try again later.';
+      setError(errorMessage);
+      
+      // Still mark as fetched even on error to prevent repeated requests
+      setHasFetched(true);
+      
+      // Update error retry count and timestamp
+      setErrorRetryCount(prev => prev + 1);
+      lastErrorTime.current = Date.now();
     } finally {
       setLoading(false);
+      fetchInProgress.current = false;
     }
+  }, [organization?.id, token, errorRetryCount]);
+
+  // Add a refresh function that resets hasFetched flag
+  const refreshDocuments = () => {
+    setHasFetched(false);
+    fetchDocuments();
   };
 
   // Helper to map API status to UI status
@@ -261,7 +299,7 @@ export default function DataManagementPage() {
                     variant="outline" 
                     size="sm" 
                     className="ml-2"
-                    onClick={fetchDocuments}
+                    onClick={refreshDocuments}
                   >
                     Refresh
                   </Button>

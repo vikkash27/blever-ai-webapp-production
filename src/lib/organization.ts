@@ -55,8 +55,18 @@ export async function getOrganizationStats() {
   }
 }
 
-export async function updateOrganization(data: any) {
-  const { orgId } = await auth();
+export async function updateOrganization(data: any, providedOrgId?: string) {
+  let orgId = providedOrgId;
+  
+  if (!orgId) {
+    try {
+      const authSession = await auth();
+      orgId = authSession.orgId || undefined;
+    } catch (authError) {
+      console.error("Auth error in updateOrganization:", authError);
+      throw new Error("Authentication failed: Unable to verify credentials");
+    }
+  }
   
   if (!orgId) {
     throw new Error("No organization selected");

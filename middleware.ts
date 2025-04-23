@@ -64,7 +64,8 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     // Match all paths except those starting with static asset extensions
-    '/((?!_next|api|trpc).*)',
+    // and exclude the organizations update API endpoint
+    '/((?!_next|api/organizations/update|api|trpc).*)',
     '/',
   ],
 };

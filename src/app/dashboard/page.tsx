@@ -5,9 +5,15 @@ import { useUser, useOrganization } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useApiAuth } from "@/hooks/useApiAuth";
-import { AlertCircle, FileText, Loader2, Search, TrendingUp, ArrowRight, Info, CalendarDays, Clock } from "lucide-react";
+import { AlertCircle, FileText, Loader2, Search, TrendingUp, ArrowRight, Info, CalendarDays, Clock, ChevronDown } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 // Define score data types
 type EsgScore = {
@@ -41,6 +47,18 @@ type EsgScore = {
   startedAt?: string;
 };
 
+// Define recommendations data types
+type Recommendations = {
+  byCategory: {
+    environmental: string[];
+    social: string[];
+    governance: string[];
+  };
+  status: string;
+  general: string[];
+  lastUpdated: string;
+};
+
 // Define company data type
 type CompanyData = {
   industry: string;
@@ -55,6 +73,21 @@ type CompanyData = {
   taxId: string;
 }
 
+// Define missing metrics data type
+type MissingMetricsData = {
+  availableMetrics?: {
+    environmental: string[];
+    social: string[];
+    governance: string[];
+  };
+  missingMetrics: {
+    environmental: string[];
+    social: string[];
+    governance: string[];
+  };
+  message?: string;
+};
+
 export default function DashboardPage() {
   const { user, isLoaded: isUserLoaded } = useUser();
   const { organization, isLoaded: isOrgLoaded } = useOrganization();
@@ -63,7 +96,8 @@ export default function DashboardPage() {
   const [shouldRedirect, setShouldRedirect] = useState(false);
   const [isCompanyProfileComplete, setIsCompanyProfileComplete] = useState(false);
   const [scores, setScores] = useState<EsgScore | null>(null);
-  const [recommendations, setRecommendations] = useState<string[]>([]);
+  const [recommendations, setRecommendations] = useState<Recommendations | null>(null);
+  const [missingMetrics, setMissingMetrics] = useState<MissingMetricsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [hasFetched, setHasFetched] = useState(false);
@@ -73,69 +107,168 @@ export default function DashboardPage() {
   // For polling when scoring is in progress
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
   const pollingCount = useRef(0);
+  const fetchInProgress = useRef(false);
+  const [errorRetryCount, setErrorRetryCount] = useState(0);
+  const lastErrorTime = useRef<number | null>(null);
 
   // Set up company profile check
   useEffect(() => {
-    if (isUserLoaded && isOrgLoaded) {
-      if (!organization) {
-        setShouldRedirect(true);
-      } else {
-        // Load company data from organization metadata
-        const metadata = organization.publicMetadata;
-        if (metadata.companyData) {
-          // Check if essential company info is filled
-          const essentialFields = [
-            (metadata.companyData as CompanyData).industry,
-            (metadata.companyData as CompanyData).size,
-            (metadata.companyData as CompanyData).headquarters
-          ];
-          setIsCompanyProfileComplete(essentialFields.every(field => field && field.trim() !== ''));
-        }
+    if (!isUserLoaded || !isOrgLoaded) return;
+
+    // Check if user has a demo account
+    const isDemoUser = user?.publicMetadata?.demo === true;
+    if (isDemoUser && !organization) {
+      setShouldRedirect(true);
+    } else if (organization) {
+      // Load company data from organization metadata
+      const metadata = organization.publicMetadata;
+      if (metadata.companyData) {
+        // Check if essential company info is filled
+        const essentialFields = [
+          (metadata.companyData as CompanyData).industry,
+          (metadata.companyData as CompanyData).size,
+          (metadata.companyData as CompanyData).headquarters
+        ];
+        setIsCompanyProfileComplete(essentialFields.every(field => field && field.trim() !== ''));
       }
     }
   }, [isUserLoaded, isOrgLoaded, organization]);
 
-  // Fetch ESG scores and recommendations from backend
-  useEffect(() => {
-    async function fetchData() {
-      if (!isReady || (hasFetched && !isScoring)) return;
+  // Fetch ESG scores and recommendations from backend with memoized callback
+  const fetchData = useCallback(async () => {
+    // Prevent multiple concurrent fetch requests
+    if (fetchInProgress.current) return;
+    if (!isReady || !organization) return;
+    
+    // If we've already fetched and there's no scoring in progress, don't fetch again
+    if (hasFetched && !isScoring && !error) return;
+    
+    // Implement exponential backoff for errors
+    if (errorRetryCount > 0 && lastErrorTime.current) {
+      const now = Date.now();
+      const timeSinceLastError = now - lastErrorTime.current;
+      const retryDelay = Math.min(30000, 1000 * Math.pow(2, errorRetryCount));
       
-      setLoading(true);
-      setError("");
-      
-      try {
-        // Fetch ESG scores using the helper
-        const scoresData = await get(`http://localhost:3001/api/esg/scores`);
-        
-        // Check if scoring is in progress (202 status)
-        const isInProgress = scoresData?._response?.inProgress || scoresData?.inProgress;
-        setIsScoring(!!isInProgress);
-        
-        if (isInProgress && scoresData?.startedAt) {
-          setScoringStartTime(scoresData.startedAt);
-        }
-        
-        setScores(scoresData);
-        
-        // Fetch recommendations
-        const recsData = await get(`http://localhost:3001/api/esg/recommendations`);
-        setRecommendations(recsData.recommendations || []);
-        
-        if (!isInProgress) {
-          setHasFetched(true);
-          // Clear any existing polling if scoring is complete
-          if (pollingInterval.current) {
-            clearInterval(pollingInterval.current);
-            pollingInterval.current = null;
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching dashboard data:", err);
-        setError(err instanceof Error ? err.message : "Failed to load dashboard data. Please try again later.");
-      } finally {
-        setLoading(false);
+      if (timeSinceLastError < retryDelay) {
+        console.log(`Waiting ${(retryDelay - timeSinceLastError)/1000}s before retry. Attempt: ${errorRetryCount}`);
+        return; // Don't retry yet
       }
     }
+    
+    fetchInProgress.current = true;
+    setLoading(true);
+    
+    try {
+      // Fetch ESG scores using the helper
+      const response = await get(`http://localhost:3001/api/esg/scores`);
+      console.log("Dashboard API response:", response); // Log response for debugging
+      
+      // Transform API response to match expected EsgScore format
+      if (response && response.success === true) {
+        console.log("Raw API response data:", response);
+        
+        // Create a properly formatted EsgScore object from the new API format
+        const formattedScores: EsgScore = {
+          // SMEESG score from esgScores.overall
+          smeesgScore: Math.round(response.esgScores.overall),
+          
+          // DSS from dataSufficiency.overall - convert to percentage
+          dssScore: Math.round(response.dataSufficiency.overall * 100),
+          
+          progress: {
+            environmental: {
+              // Now we have separate values for performance and data sufficiency
+              data: Math.round(response.dataSufficiency.environmental * 100), // Use actual data sufficiency
+              smeesg: Math.round(response.esgScores.environmental * 100), // Use actual ESG score
+            },
+            social: {
+              data: Math.round(response.dataSufficiency.social * 100),
+              smeesg: Math.round(response.esgScores.social * 100),
+            },
+            governance: {
+              data: Math.round(response.dataSufficiency.governance * 100),
+              smeesg: Math.round(response.esgScores.governance * 100),
+            },
+          },
+          missingData: [], // This field is still missing from the API
+          lastUpdated: {
+            // Use the single lastUpdated value for all categories
+            environmental: response.lastUpdated,
+            social: response.lastUpdated,
+            governance: response.lastUpdated,
+          },
+          inProgress: false, // This field is no longer in the API
+        };
+        
+        console.log("Using formatted scores:", formattedScores);
+        setScores(formattedScores);
+      } else {
+        // Handle old response format or errors
+        const isInProgress = response?._response?.inProgress || response?.inProgress;
+        setIsScoring(!!isInProgress);
+        
+        if (isInProgress && response?.startedAt) {
+          setScoringStartTime(response.startedAt);
+        }
+        
+        if (response && Object.keys(response).length > 0) {
+          setScores(response);
+        }
+      }
+      
+      // Fetch recommendations
+      const recsData = await get(`http://localhost:3001/api/esg/recommendations`);
+      
+      // Handle the new recommendations structure
+      if (recsData.success && recsData.data) {
+        setRecommendations(recsData.data);
+      } else {
+        setRecommendations(null);
+      }
+
+      // Fetch missing metrics
+      const missingMetricsData = await get(`http://localhost:3001/api/esg/metrics/missing`);
+      
+      if (missingMetricsData.success) {
+        setMissingMetrics(missingMetricsData);
+      } else {
+        setMissingMetrics(null);
+      }
+      
+      // Clear any previous errors and reset retry count
+      setError("");
+      setErrorRetryCount(0);
+      
+      // Mark as fetched regardless of whether scoring is in progress
+      const isInProgress = response?.inProgress === true;
+      if (!isInProgress) {
+        setHasFetched(true);
+        // Clear any existing polling if scoring is complete
+        if (pollingInterval.current) {
+          clearInterval(pollingInterval.current);
+          pollingInterval.current = null;
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+      const errorMessage = err instanceof Error ? err.message : "Failed to load dashboard data. Please try again later.";
+      setError(errorMessage);
+      
+      // Still mark as fetched even on error to prevent repeated requests
+      setHasFetched(true);
+      
+      // Update error retry count and timestamp
+      setErrorRetryCount(prev => prev + 1);
+      lastErrorTime.current = Date.now();
+    } finally {
+      setLoading(false);
+      fetchInProgress.current = false;
+    }
+  }, [isReady, organization?.id, get, hasFetched, isScoring, error, errorRetryCount]);
+
+  // Fetch ESG scores and recommendations from backend
+  useEffect(() => {
+    if (!isReady || !organization) return;
     
     fetchData();
     
@@ -145,6 +278,10 @@ export default function DashboardPage() {
         pollingCount.current += 1;
         fetchData();
       }, 15000); // Poll every 15 seconds
+    } else if (!isScoring && pollingInterval.current) {
+      // Clean up polling if scoring is not in progress
+      clearInterval(pollingInterval.current);
+      pollingInterval.current = null;
     }
     
     // Cleanup polling on unmount
@@ -154,7 +291,7 @@ export default function DashboardPage() {
         pollingInterval.current = null;
       }
     };
-  }, [isReady, get, hasFetched, isScoring]);
+  }, [isReady, organization, isScoring, fetchData]);
 
   // Calculate estimated completion time
   const getEstimatedCompletion = () => {
@@ -491,17 +628,90 @@ export default function DashboardPage() {
                   <AlertCircle className="h-5 w-5 text-amber-500" />
                   Missing Data
                 </CardTitle>
-                <CardDescription>Documents needed to improve your score</CardDescription>
+                <CardDescription>Key metrics needed to improve your ESG score</CardDescription>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2">
-                  {scores.missingData?.map((item, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-slate-700">{item}</span>
-                    </li>
-                  )) || <li className="text-sm text-slate-600">No missing data information available</li>}
-                </ul>
+                {missingMetrics?.message && (
+                  <div className="bg-amber-50 p-3 rounded mb-4 text-sm text-amber-800">
+                    {missingMetrics.message}
+                  </div>
+                )}
+
+                {missingMetrics ? (
+                  <div className="space-y-4">
+                    {/* Environmental Missing Metrics as Accordion */}
+                    {missingMetrics.missingMetrics.environmental.length > 0 && (
+                      <Accordion type="single" collapsible>
+                        <AccordionItem value="environmental">
+                          <AccordionTrigger className="py-2 text-sm font-medium text-emerald-700">
+                            <div className="flex items-center">
+                              <div className="w-2 h-2 rounded-full bg-emerald-500 mr-2"></div>
+                              Environmental <span className="ml-2 text-xs text-slate-500">({missingMetrics.missingMetrics.environmental.length} metrics)</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <ul className="space-y-1 pl-4 py-2">
+                              {missingMetrics.missingMetrics.environmental.map((item, index) => (
+                                <li key={index} className="text-sm text-slate-700 list-disc">
+                                  {item}
+                                </li>
+                              ))}
+                            </ul>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    )}
+
+                    {/* Social Missing Metrics as Accordion */}
+                    {missingMetrics.missingMetrics.social.length > 0 && (
+                      <Accordion type="single" collapsible>
+                        <AccordionItem value="social">
+                          <AccordionTrigger className="py-2 text-sm font-medium text-blue-700">
+                            <div className="flex items-center">
+                              <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
+                              Social <span className="ml-2 text-xs text-slate-500">({missingMetrics.missingMetrics.social.length} metrics)</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <ul className="space-y-1 pl-4 py-2">
+                              {missingMetrics.missingMetrics.social.map((item, index) => (
+                                <li key={index} className="text-sm text-slate-700 list-disc">
+                                  {item}
+                                </li>
+                              ))}
+                            </ul>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    )}
+
+                    {/* Governance Missing Metrics as Accordion */}
+                    {missingMetrics.missingMetrics.governance.length > 0 && (
+                      <Accordion type="single" collapsible>
+                        <AccordionItem value="governance">
+                          <AccordionTrigger className="py-2 text-sm font-medium text-purple-700">
+                            <div className="flex items-center">
+                              <div className="w-2 h-2 rounded-full bg-purple-500 mr-2"></div>
+                              Governance <span className="ml-2 text-xs text-slate-500">({missingMetrics.missingMetrics.governance.length} metrics)</span>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <ul className="space-y-1 pl-4 py-2">
+                              {missingMetrics.missingMetrics.governance.map((item, index) => (
+                                <li key={index} className="text-sm text-slate-700 list-disc">
+                                  {item}
+                                </li>
+                              ))}
+                            </ul>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-600">Loading missing metrics information...</p>
+                )}
+
                 <div className="mt-4">
                   <Link href="/data-management">
                     <Button variant="outline" size="sm" className="w-full">
@@ -519,17 +729,97 @@ export default function DashboardPage() {
                   <Info className="h-5 w-5 text-blue-500" />
                   Recommendations
                 </CardTitle>
-                <CardDescription>AI-generated suggestions to improve your ESG score</CardDescription>
+                <CardDescription>
+                  AI-generated suggestions to improve your ESG score
+                  {recommendations?.lastUpdated && (
+                    <span className="text-xs block mt-1 text-slate-400">
+                      Last updated: {new Date(recommendations.lastUpdated).toLocaleString()}
+                    </span>
+                  )}
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2">
-                  {recommendations.map((item, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-slate-700">{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                {recommendations?.status === "insufficient_data" && (
+                  <div className="bg-amber-50 p-2 rounded mb-3 text-xs text-amber-800">
+                    <AlertCircle className="inline-block h-3 w-3 mr-1" /> 
+                    Insufficient data for complete recommendations
+                  </div>
+                )}
+                
+                {/* General Recommendations */}
+                {recommendations?.general && recommendations.general.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium mb-2">General</h4>
+                    <ul className="space-y-2">
+                      {recommendations.general.map((item, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <Info className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm text-slate-700">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {/* Environmental Recommendations */}
+                {recommendations?.byCategory?.environmental && recommendations.byCategory.environmental.length > 0 && (
+                  <div className="mb-3">
+                    <h4 className="text-sm font-medium mb-2 text-emerald-700 flex items-center">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 mr-2"></div>
+                      Environmental
+                    </h4>
+                    <ul className="space-y-2 pl-4">
+                      {recommendations.byCategory.environmental.map((item, index) => (
+                        <li key={index} className="text-sm text-slate-700 list-disc">
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {/* Social Recommendations */}
+                {recommendations?.byCategory?.social && recommendations.byCategory.social.length > 0 && (
+                  <div className="mb-3">
+                    <h4 className="text-sm font-medium mb-2 text-blue-700 flex items-center">
+                      <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>
+                      Social
+                    </h4>
+                    <ul className="space-y-2 pl-4">
+                      {recommendations.byCategory.social.map((item, index) => (
+                        <li key={index} className="text-sm text-slate-700 list-disc">
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {/* Governance Recommendations */}
+                {recommendations?.byCategory?.governance && recommendations.byCategory.governance.length > 0 && (
+                  <div className="mb-3">
+                    <h4 className="text-sm font-medium mb-2 text-purple-700 flex items-center">
+                      <div className="w-2 h-2 rounded-full bg-purple-500 mr-2"></div>
+                      Governance
+                    </h4>
+                    <ul className="space-y-2 pl-4">
+                      {recommendations.byCategory.governance.map((item, index) => (
+                        <li key={index} className="text-sm text-slate-700 list-disc">
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {/* No recommendations case */}
+                {(!recommendations || 
+                  (!recommendations.general?.length && 
+                   !recommendations.byCategory?.environmental?.length && 
+                   !recommendations.byCategory?.social?.length && 
+                   !recommendations.byCategory?.governance?.length)) && (
+                  <p className="text-sm text-slate-600">No recommendations available at this time.</p>
+                )}
               </CardContent>
             </Card>
           </div>

@@ -10,11 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertCircle, File, Upload, X, CheckCircle, Loader2, Clock } from 'lucide-react';
 
 const documentTypes = [
-  { value: 'environmental_report', label: 'Environmental Report' },
+  { value: 'annual_report', label: 'Annual Report' },
   { value: 'sustainability_report', label: 'Sustainability Report' },
-  { value: 'governance_document', label: 'Governance Document' },
-  { value: 'social_impact_report', label: 'Social Impact Report' },
   { value: 'financial_statement', label: 'Financial Statement' },
+  { value: 'policy_document', label: 'Policy Document' },
+  { value: 'regulatory_filing', label: 'Regulatory Filing' },
+  { value: 'impact_report', label: 'Impact Report' },
   { value: 'other', label: 'Other' },
 ];
 
