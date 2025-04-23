@@ -88,6 +88,24 @@ type MissingMetricsData = {
   message?: string;
 };
 
+// Define scoring queue status type
+type ScoringQueueStatus = {
+  organizationId: string;
+  currentStatus: {
+    isScoring: boolean;
+    lastScoredAt: string | null;
+    pendingDocuments: number;
+  };
+  queueStatus: {
+    inQueue: boolean;
+    queuePosition: number;
+    estimatedTimeToProcess: number;
+    cooldownRemaining: number;
+    isScheduled: boolean;
+    scheduledAt: string | null;
+  };
+};
+
 export default function DashboardPage() {
   const { user, isLoaded: isUserLoaded } = useUser();
   const { organization, isLoaded: isOrgLoaded } = useOrganization();
@@ -98,6 +116,7 @@ export default function DashboardPage() {
   const [scores, setScores] = useState<EsgScore | null>(null);
   const [recommendations, setRecommendations] = useState<Recommendations | null>(null);
   const [missingMetrics, setMissingMetrics] = useState<MissingMetricsData | null>(null);
+  const [scoringStatus, setScoringStatus] = useState<ScoringQueueStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [hasFetched, setHasFetched] = useState(false);
@@ -169,25 +188,26 @@ export default function DashboardPage() {
         
         // Create a properly formatted EsgScore object from the new API format
         const formattedScores: EsgScore = {
-          // SMEESG score from esgScores.overall
+          // Round the values to integers for display
           smeesgScore: Math.round(response.esgScores.overall),
           
-          // DSS from dataSufficiency.overall - convert to percentage
+          // Data sufficiency is already in percentage for overall
           dssScore: Math.round(response.dataSufficiency.overall * 100),
           
           progress: {
             environmental: {
-              // Now we have separate values for performance and data sufficiency
-              data: Math.round(response.dataSufficiency.environmental * 100), // Use actual data sufficiency
-              smeesg: Math.round(response.esgScores.environmental * 100), // Use actual ESG score
+              // Data sufficiency needs to be multiplied by 100 to get percentage
+              data: Math.round(response.dataSufficiency.environmental * 100),
+              // ESG scores are already in percentage
+              smeesg: Math.round(response.esgScores.environmental),
             },
             social: {
               data: Math.round(response.dataSufficiency.social * 100),
-              smeesg: Math.round(response.esgScores.social * 100),
+              smeesg: Math.round(response.esgScores.social),
             },
             governance: {
               data: Math.round(response.dataSufficiency.governance * 100),
-              smeesg: Math.round(response.esgScores.governance * 100),
+              smeesg: Math.round(response.esgScores.governance),
             },
           },
           missingData: [], // This field is still missing from the API
@@ -233,6 +253,13 @@ export default function DashboardPage() {
         setMissingMetrics(missingMetricsData);
       } else {
         setMissingMetrics(null);
+      }
+      
+      // Fetch scoring queue status
+      const scoringQueueData = await get(`http://localhost:3001/api/esg/scoring-queue-status`);
+      
+      if (scoringQueueData.success) {
+        setScoringStatus(scoringQueueData);
       }
       
       // Clear any previous errors and reset retry count
@@ -319,6 +346,20 @@ export default function DashboardPage() {
   // Combine errors
   const displayError = error || authError;
 
+  // Format time remaining helper
+  const formatTimeRemaining = (milliseconds: number): string => {
+    if (milliseconds <= 0) return 'now';
+    
+    const minutes = Math.floor(milliseconds / 60000);
+    const seconds = Math.floor((milliseconds % 60000) / 1000);
+    
+    if (minutes > 0) {
+      return `${minutes} minute${minutes !== 1 ? 's' : ''}${seconds > 0 ? ` ${seconds} second${seconds !== 1 ? 's' : ''}` : ''}`;
+    }
+    
+    return `${seconds} second${seconds !== 1 ? 's' : ''}`;
+  };
+
   if (!isUserLoaded || !isOrgLoaded || shouldRedirect) {
     return (
       <AuthenticatedLayout>
@@ -330,6 +371,46 @@ export default function DashboardPage() {
   return (
     <AuthenticatedLayout>
       <div className="container mx-auto py-6 px-4 md:px-8 space-y-8 max-w-7xl">
+        {/* Scoring Queue Status Banner */}
+        {scoringStatus && (
+          <>
+            {scoringStatus.currentStatus.isScoring && (
+              <div className="bg-blue-50 text-blue-800 p-3 rounded-md border border-blue-200 flex items-center gap-2 mb-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm font-medium">ESG scoring in progress</span>
+              </div>
+            )}
+            
+            {!scoringStatus.currentStatus.isScoring && scoringStatus.queueStatus.isScheduled && scoringStatus.queueStatus.scheduledAt && (
+              <div className="bg-emerald-50 text-emerald-800 p-3 rounded-md border border-emerald-200 flex items-center gap-2 mb-4">
+                <CalendarDays className="h-4 w-4" />
+                <span className="text-sm">
+                  Next ESG score calculation scheduled for {new Date(scoringStatus.queueStatus.scheduledAt).toLocaleString()}
+                </span>
+              </div>
+            )}
+            
+            {!scoringStatus.currentStatus.isScoring && !scoringStatus.queueStatus.isScheduled && scoringStatus.queueStatus.inQueue && (
+              <div className="bg-amber-50 text-amber-800 p-3 rounded-md border border-amber-200 flex items-center gap-2 mb-4">
+                <Clock className="h-4 w-4" />
+                <span className="text-sm">
+                  Your organization is in the scoring queue (position {scoringStatus.queueStatus.queuePosition}). 
+                  Estimated time to process: {formatTimeRemaining(scoringStatus.queueStatus.estimatedTimeToProcess)}
+                </span>
+              </div>
+            )}
+            
+            {!scoringStatus.currentStatus.isScoring && !scoringStatus.queueStatus.isScheduled && !scoringStatus.queueStatus.inQueue && scoringStatus.queueStatus.cooldownRemaining > 0 && (
+              <div className="bg-slate-50 text-slate-800 p-3 rounded-md border border-slate-200 flex items-center gap-2 mb-4">
+                <Clock className="h-4 w-4" />
+                <span className="text-sm">
+                  Next ESG score calculation available in {formatTimeRemaining(scoringStatus.queueStatus.cooldownRemaining)}
+                </span>
+              </div>
+            )}
+          </>
+        )}
+
         {/* Header Section with Title and CTA Buttons */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
