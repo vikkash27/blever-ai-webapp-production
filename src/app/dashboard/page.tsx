@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { useApiAuth } from "@/hooks/useApiAuth";
-import { AlertCircle, FileText, Loader2, Search, TrendingUp, ArrowRight, Info, CalendarDays, Clock, ChevronDown, ShieldAlert } from "lucide-react";
+import { AlertCircle, FileText, Loader2, TrendingUp, ArrowRight, Info, CalendarDays, Clock, ShieldAlert } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -137,26 +137,25 @@ export default function DashboardPage() {
 
   // Set up company profile check
   useEffect(() => {
-    if (!isUserLoaded || !isOrgLoaded) return;
-
-    // Check if user has a demo account
-    const isDemoUser = user?.publicMetadata?.demo === true;
-    if (isDemoUser && !organization) {
-      setShouldRedirect(true);
-    } else if (organization) {
-      // Load company data from organization metadata
-      const metadata = organization.publicMetadata;
-      if (metadata.companyData) {
-        // Check if essential company info is filled
-        const essentialFields = [
-          (metadata.companyData as CompanyData).industry,
-          (metadata.companyData as CompanyData).size,
-          (metadata.companyData as CompanyData).headquarters
-        ];
-        setIsCompanyProfileComplete(essentialFields.every(field => field && field.trim() !== ''));
+    if (isUserLoaded && user && isOrgLoaded && organization) {
+      // If user exists but has no organization, redirect to onboarding
+      if (!organization) {
+        router.push('/onboarding');
+        setShouldRedirect(true);
+      }
+      
+      // Check for demo access
+      if (user?.publicMetadata?.demo === true) {
+        // Demo users have full access
+        setHasAccess(true);
+        setAccessChecked(true);
+      } else {
+        // Regular access check
+        setHasAccess(true);
+        setAccessChecked(true);
       }
     }
-  }, [isUserLoaded, isOrgLoaded, organization, router]);
+  }, [isUserLoaded, user, isOrgLoaded, organization, router, user?.publicMetadata?.demo]);
 
   // Fetch ESG scores and recommendations from backend with memoized callback
   const fetchData = useCallback(async () => {
@@ -296,7 +295,7 @@ export default function DashboardPage() {
       setLoading(false);
       fetchInProgress.current = false;
     }
-  }, [isReady, organization?.id, get, hasFetched, isScoring, error, errorRetryCount]);
+  }, [isReady, organization, organization?.id, get, hasFetched, isScoring, error, errorRetryCount]);
 
   // Fetch ESG scores and recommendations from backend
   useEffect(() => {

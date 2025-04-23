@@ -1,7 +1,7 @@
 'use client';
 
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
-import { useOrganization, OrganizationProfile, useClerk } from "@clerk/nextjs";
+import { useOrganization, useClerk } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,26 +13,15 @@ import {
   Building, 
   Edit, 
   MapPin, 
-  Users, 
-  BarChart3, 
-  FileText, 
   Mail, 
   Phone, 
-  Globe, 
-  Clock, 
-  Shield, 
-  FileUp, 
-  GanttChart, 
-  PieChart,
-  Download,
+  Globe,
   Loader2,
   AlertCircle,
-  ArrowRight,
   CheckCircle,
   Save
 } from "lucide-react";
 import { useApiAuth } from "@/hooks/useApiAuth";
-import Link from "next/link";
 
 // Define score data types - matching the format from the dashboard
 type EsgScore = {
@@ -104,7 +93,7 @@ export default function CompanyOverviewPage() {
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState(false);
 
-  // Form state
+  // Company data state
   const [companyData, setCompanyData] = useState({
     industry: "",
     size: "",
@@ -115,14 +104,26 @@ export default function CompanyOverviewPage() {
     address: "",
     country: "",
     sector: "",
-    taxId: "",
+    taxId: ""
   });
-
-  // Contact form state
+  
+  // Contacts state
   const [contacts, setContacts] = useState({
-    esgLead: { name: "", email: "", phone: "" },
-    sustainabilityManager: { name: "", email: "", phone: "" },
-    financeContact: { name: "", email: "", phone: "" }
+    esgLead: {
+      name: "",
+      email: "",
+      phone: ""
+    },
+    sustainabilityManager: {
+      name: "",
+      email: "",
+      phone: ""
+    },
+    financeContact: {
+      name: "",
+      email: "",
+      phone: ""
+    }
   });
 
   // Fetch company data on load
@@ -314,18 +315,13 @@ export default function CompanyOverviewPage() {
   // Handle form field changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
-    setCompanyData(prev => ({
-      ...prev,
-      [id.replace('company-', '')]: value
-    }));
+    const field = id.replace('company-', '');
+    setCompanyData(prev => ({ ...prev, [field]: value }));
   };
 
   // Handle select field changes
   const handleSelectChange = (value: string, field: string) => {
-    setCompanyData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setCompanyData(prev => ({ ...prev, [field]: value }));
   };
 
   // Handle contact form changes
@@ -344,9 +340,8 @@ export default function CompanyOverviewPage() {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        setLogoPreview(result);
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -355,20 +350,44 @@ export default function CompanyOverviewPage() {
   // Handle form submission
   const handleSaveCompanyData = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormSubmitting(true);
+    setFormError("");
+    setFormSuccess(false);
     
     try {
-      setFormSubmitting(true);
-      setFormError("");
+      // Prepare the payload with company data and contacts
+      const payload = {
+        organizationId: organization?.id,
+        ...companyData,
+        contacts
+      };
       
-      // Save to localStorage as a temporary solution to avoid Clerk middleware issues
-      localStorage.setItem('companyData', JSON.stringify(companyData));
-      localStorage.setItem('contacts', JSON.stringify(contacts));
+      // Send the request to update organization data
+      const response = await fetch(`/api/organizations/update`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        credentials: 'include'
+      });
       
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update company data');
+      }
+      
+      // Show success message
       setFormSuccess(true);
-      setTimeout(() => setFormSuccess(false), 3000);
-    } catch (error) {
-      console.error("Error saving company data:", error);
-      setFormError(error instanceof Error ? error.message : "Failed to save company data. Please try again.");
+      
+      // Hide success message after 3 seconds
+      setTimeout(() => {
+        setFormSuccess(false);
+      }, 3000);
+      
+    } catch (error: unknown) {
+      console.error('Error saving company data:', error);
+      setFormError(error instanceof Error ? error.message : 'An unknown error occurred');
     } finally {
       setFormSubmitting(false);
     }

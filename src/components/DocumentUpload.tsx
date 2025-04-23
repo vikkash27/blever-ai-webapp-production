@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertCircle, File, Upload, X, CheckCircle, Loader2, Clock } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Upload, AlertCircle, Check, X, Clock, Loader2, FileIcon } from 'lucide-react';
 
 const documentTypes = [
   { value: 'annual_report', label: 'Annual Report' },
@@ -174,7 +174,7 @@ export default function DocumentUpload() {
 
         {uploadStatus === 'success' && (
           <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4 flex items-start">
-            <CheckCircle className="text-green-500 h-5 w-5 mt-0.5 mr-3" />
+            <Check className="text-green-500 h-5 w-5 mt-0.5 mr-3" />
             <div>
               <p className="text-green-800 font-medium">Upload successful!</p>
               <p className="text-green-700 text-sm">Your documents have been uploaded and will be processed.</p>
@@ -218,7 +218,7 @@ export default function DocumentUpload() {
               {files.map((file, index) => (
                 <div key={index} className="flex items-center justify-between bg-slate-50 p-2 rounded-md">
                   <div className="flex items-center space-x-2">
-                    <File className="h-4 w-4 text-slate-500" />
+                    <FileIcon className="h-4 w-4 text-slate-500" />
                     <span className="text-sm text-slate-700 truncate max-w-xs">{file.name}</span>
                     <span className="text-xs text-slate-500">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
                   </div>

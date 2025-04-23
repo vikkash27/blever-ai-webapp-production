@@ -6,8 +6,8 @@ import AuthenticatedLayout from '@/components/layouts/AuthenticatedLayout';
 import DocumentUpload from '@/components/DocumentUpload';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, FileText, Loader2, Search, Trash2, ExternalLink, FileCheck, Upload } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AlertCircle, FileText, Loader2, Search, Trash2, FileCheck, Upload } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 
