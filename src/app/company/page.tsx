@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image"; 
 import { 
   Building, 
@@ -25,8 +25,45 @@ import {
   FileUp, 
   GanttChart, 
   PieChart,
-  Download
+  Download,
+  Loader2,
+  AlertCircle,
+  ArrowRight
 } from "lucide-react";
+import { useApiAuth } from "@/hooks/useApiAuth";
+import Link from "next/link";
+
+// Define score data types - matching the format from the dashboard
+type EsgScore = {
+  smeesgScore: number;
+  dssScore: number;
+  progress: {
+    environmental: {
+      data: number;
+      smeesg: number;
+    };
+    social: {
+      data: number;
+      smeesg: number;
+    };
+    governance: {
+      data: number;
+      smeesg: number;
+    };
+  };
+  missingData: string[];
+  lastUpdated: {
+    environmental: string;
+    social: string;
+    governance: string;
+  };
+  _response?: {
+    status: number;
+    inProgress: boolean;
+  };
+  inProgress?: boolean;
+  startedAt?: string;
+};
 
 // Mock data for company ESG targets
 const mockESGTargets = [
@@ -48,6 +85,14 @@ export default function CompanyOverviewPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const isAdmin = membership?.role === "admin";
+  const { isReady, error: authError, get } = useApiAuth();
+  const [scores, setScores] = useState<EsgScore | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [hasFetched, setHasFetched] = useState(false);
+  const [isScoring, setIsScoring] = useState(false);
+  const [scoringStartTime, setScoringStartTime] = useState<string | null>(null);
+  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
 
   // Form state
   const [companyData, setCompanyData] = useState({
@@ -69,6 +114,77 @@ export default function CompanyOverviewPage() {
     sustainabilityManager: { name: "", email: "", phone: "" },
     financeContact: { name: "", email: "", phone: "" }
   });
+
+  // Fetch ESG scores from backend
+  useEffect(() => {
+    async function fetchScores() {
+      if (!isReady || !organization || (hasFetched && !isScoring)) return;
+      
+      setLoading(true);
+      setError("");
+      
+      try {
+        // Fetch ESG scores using the helper
+        const scoresData = await get(`http://localhost:3001/api/esg/scores`);
+        
+        // Check if scoring is in progress (202 status)
+        const isInProgress = scoresData?._response?.inProgress || scoresData?.inProgress;
+        setIsScoring(!!isInProgress);
+        
+        if (isInProgress && scoresData?.startedAt) {
+          setScoringStartTime(scoresData.startedAt);
+        }
+        
+        setScores(scoresData);
+        
+        if (!isInProgress) {
+          setHasFetched(true);
+          // Clear any existing polling if scoring is complete
+          if (pollingInterval.current) {
+            clearInterval(pollingInterval.current);
+            pollingInterval.current = null;
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching ESG scores:", err);
+        setError(err instanceof Error ? err.message : "Failed to load ESG scores. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchScores();
+    
+    // Set up polling when scoring is in progress
+    if (isScoring && !pollingInterval.current) {
+      pollingInterval.current = setInterval(() => {
+        fetchScores();
+      }, 15000); // Poll every 15 seconds
+    }
+    
+    // Cleanup polling on unmount
+    return () => {
+      if (pollingInterval.current) {
+        clearInterval(pollingInterval.current);
+        pollingInterval.current = null;
+      }
+    };
+  }, [isReady, get, organization, hasFetched, isScoring]);
+
+  // Calculate estimated completion time
+  const getEstimatedCompletion = () => {
+    if (!scoringStartTime) return 'a few minutes';
+    
+    const started = new Date(scoringStartTime).getTime();
+    const now = Date.now();
+    const elapsed = Math.floor((now - started) / 60000); // minutes
+    
+    // ESG scoring typically takes 5-10 minutes
+    const estimatedTotal = 10; // minutes
+    const remaining = Math.max(1, estimatedTotal - elapsed);
+    
+    return `approximately ${remaining} minute${remaining !== 1 ? 's' : ''}`;
+  };
 
   // Handle form field changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -383,60 +499,112 @@ export default function CompanyOverviewPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <Label className="text-sm text-slate-600">SMEESG Score</Label>
-                      <span className="text-xl font-semibold text-emerald-600">90/100</span>
+                  {loading && (
+                    <div className="flex justify-center items-center py-8">
+                      <Loader2 className="h-8 w-8 text-emerald-600 animate-spin" />
                     </div>
-                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: '90%' }}></div>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Environmental</span>
-                      <span className="text-sm font-medium text-emerald-600">94/100</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Social</span>
-                      <span className="text-sm font-medium text-blue-600">82/100</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Governance</span>
-                      <span className="text-sm font-medium text-amber-600">88/100</span>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <Label className="text-sm text-slate-600">Overall ESG Readiness Score</Label>
-                      <span className="text-xl font-semibold text-emerald-600">78/100</span>
-                    </div>
-                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: '78%' }}></div>
-                    </div>
-                  </div>
+                  )}
 
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Environmental</span>
-                      <span className="text-sm font-medium text-emerald-600">82/100</span>
+                  {error && (
+                    <div className="bg-red-50 text-red-600 p-3 rounded-md flex items-start gap-2">
+                      <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm">{error}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Social</span>
-                      <span className="text-sm font-medium text-blue-600">74/100</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Governance</span>
-                      <span className="text-sm font-medium text-amber-600">79/100</span>
-                    </div>
-                  </div>
+                  )}
 
-                  <div className="pt-2">
-                    <Button variant="outline" className="w-full">
-                      <PieChart className="mr-2 h-4 w-4" /> View Detailed Analysis
-                    </Button>
-                  </div>
+                  {/* Scoring In Progress Notice */}
+                  {!loading && !error && isScoring && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-2 flex items-start">
+                      <Clock className="text-amber-500 h-5 w-5 mt-0.5 mr-2 animate-pulse" />
+                      <div>
+                        <p className="text-amber-800 font-medium text-sm">ESG Scoring in Progress</p>
+                        <p className="text-amber-700 text-xs">
+                          Your documents are being processed. This should take {getEstimatedCompletion()} to complete.
+                        </p>
+                        {scoringStartTime && (
+                          <p className="text-amber-700 text-xs mt-1">
+                            Started: {new Date(scoringStartTime).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {!loading && !error && !scores && (
+                    <div className="flex flex-col items-center justify-center text-center py-4">
+                      <FileText className="h-12 w-12 text-slate-300 mb-3" />
+                      <h3 className="text-md font-medium text-slate-700 mb-1">No ESG Scores Available</h3>
+                      <p className="text-sm text-slate-500 mb-4">
+                        Upload your ESG documents to get started with your assessment.
+                      </p>
+                      <Link href="/data-management">
+                        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm text-sm">
+                          <ArrowRight className="mr-2 h-3 w-3" /> Upload Documents
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+
+                  {!loading && !error && scores && (
+                    <div className={isScoring ? 'opacity-70' : ''}>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <Label className="text-sm text-slate-600">SMEESG Score</Label>
+                          <span className="text-xl font-semibold text-emerald-600">{scores.smeesgScore || 0}/100</span>
+                        </div>
+                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${scores.smeesgScore || 0}%` }}></div>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Environmental</span>
+                          <span className="text-sm font-medium text-emerald-600">{scores.progress?.environmental?.smeesg || 0}/100</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Social</span>
+                          <span className="text-sm font-medium text-blue-600">{scores.progress?.social?.smeesg || 0}/100</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Governance</span>
+                          <span className="text-sm font-medium text-amber-600">{scores.progress?.governance?.smeesg || 0}/100</span>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <Label className="text-sm text-slate-600">Overall ESG Readiness Score</Label>
+                          <span className="text-xl font-semibold text-emerald-600">{scores.dssScore || 0}/100</span>
+                        </div>
+                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${scores.dssScore || 0}%` }}></div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Environmental</span>
+                          <span className="text-sm font-medium text-emerald-600">{scores.progress?.environmental?.data || 0}/100</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Social</span>
+                          <span className="text-sm font-medium text-blue-600">{scores.progress?.social?.data || 0}/100</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Governance</span>
+                          <span className="text-sm font-medium text-amber-600">{scores.progress?.governance?.data || 0}/100</span>
+                        </div>
+                      </div>
+
+                      <div className="pt-2">
+                        <Link href="/dashboard">
+                          <Button variant="outline" className="w-full">
+                            <PieChart className="mr-2 h-4 w-4" /> View Detailed Analysis
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

@@ -1,474 +1,388 @@
 'use client';
 
-import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Dialog, 
-  DialogClose, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
-} from "@/components/ui/dialog";
-import { useState } from "react";
-import { 
-  FileUp, 
-  FileText, 
-  FileSpreadsheet, 
-  Search, 
-  Check, 
-  X, 
-  Edit as EditIcon, 
-  Trash, 
-  Download,
-  Filter,
-  Eye,
-  Save
-} from "lucide-react";
+import { useState, useEffect } from 'react';
+import { useOrganization, useAuth } from '@clerk/nextjs';
+import AuthenticatedLayout from '@/components/layouts/AuthenticatedLayout';
+import DocumentUpload from '@/components/DocumentUpload';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AlertCircle, FileText, Loader2, Search, Trash2, ExternalLink, FileCheck, Upload } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import Link from 'next/link';
 
-// Mock data for extracted fields
-const mockExtractedData = [
-  { id: 1, category: 'Environmental', field: 'Scope 1 Emissions', value: '150 tCO2e', source: 'Utility Bill Q1', date: '2025-04-01', status: 'OK' },
-  { id: 2, category: 'Social', field: 'Employee Turnover Rate', value: '12%', source: 'HR Report 2024', date: '2025-01-15', status: 'OK' },
-  { id: 3, category: 'Governance', field: 'Board Gender Diversity', value: '30% Female', source: 'Annual Report 2024', date: '2025-03-10', status: 'OK' },
-  { id: 4, category: 'Environmental', field: 'Water Consumption', value: 'Missing', source: '-', date: '-', status: 'Missing' },
-  { id: 5, category: 'Governance', field: 'Code of Conduct Update', value: 'Policy v1.2', source: 'Internal Policy Doc', date: '2023-11-20', status: 'Outdated' },
-];
-
-// Mock data for extraction feedback
-const mockExtractionFeedback = {
-  fileName: "Utility Bill Q1 2025.pdf",
-  extractedFields: [
-    { field: "Scope 1 Emissions", value: "150 tCO2e", confidence: 95 },
-    { field: "Reporting Period", value: "Q1 2025", confidence: 98 },
-    { field: "Energy Usage (kWh)", value: "12000", confidence: 88 },
-  ]
+// Document type with all the properties
+type Document = {
+  id?: string;
+  _id: string;
+  organizationId: string;
+  filename: string;
+  originalFilename: string;
+  fileType: string;
+  mimeType: string;
+  fileSize: number;
+  uploadedBy: string;
+  processingStatus: 'completed' | 'processing' | 'failed';
+  processingError: string | null;
+  createdAt: string;
+  updatedAt: string;
+  metadata: {
+    documentType: string;
+    tags: string[];
+    topics: string[];
+    esgCategories: string[];
+    aiConfidence: number;
+    estimatedYear?: number;
+  };
+  // For backward compatibility with UI
+  name?: string;
+  type?: string;
+  uploadedAt?: string;
+  size?: number;
+  status?: 'processed' | 'processing' | 'failed';
+  metrics?: {
+    count: number;
+    categories: string[];
+  };
 };
 
 export default function DataManagementPage() {
-  const [activeTab, setActiveTab] = useState("upload");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [showExtractionFeedback, setShowExtractionFeedback] = useState(false);
-  const [editingItem, setEditingItem] = useState<null | {
-    id: number;
-    category: string;
-    field: string;
-    value: string;
-    source: string;
-    date: string;
-    status: string;
-  }>(null);
+  const { organization } = useOrganization();
+  const { getToken } = useAuth();
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
+  const [token, setToken] = useState<string | null>(null);
 
-  // Filter data based on selected filters
-  const filteredData = mockExtractedData.filter(item => {
-    const matchesCategory = categoryFilter === "all" || item.category.toLowerCase() === categoryFilter;
-    const matchesStatus = statusFilter === "all" || item.status.toLowerCase() === statusFilter.toLowerCase();
-    return matchesCategory && matchesStatus;
-  });
+  useEffect(() => {
+    // Fetch the token when the component mounts
+    async function fetchToken() {
+      try {
+        const sessionToken = await getToken();
+        setToken(sessionToken);
+      } catch (err) {
+        console.error('Error fetching token:', err);
+        setError('Authentication error. Please try refreshing the page.');
+      }
+    }
 
-  const getStatusBadge = (status: string) => {
-    switch(status.toLowerCase()) {
-      case 'ok':
-        return <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600">OK</Badge>;
-      case 'missing':
-        return <Badge variant="destructive">Missing</Badge>;
-      case 'outdated':
-        return <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200">Outdated</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+    fetchToken();
+  }, [getToken]);
+
+  useEffect(() => {
+    if (organization?.id && token) {
+      fetchDocuments();
+    }
+  }, [organization?.id, token]);
+
+  const fetchDocuments = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(`http://localhost:3001/api/documents?organizationId=${organization?.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch documents');
+      }
+      
+      const data = await response.json();
+      console.log('API Response:', data);
+      
+      // Transform documents to match our UI expectations
+      const transformedDocs = (data.data?.documents || []).map((doc: Document) => ({
+        ...doc,
+        id: doc._id, // Use _id as id
+        name: doc.originalFilename,
+        type: doc.metadata?.documentType || 'other',
+        uploadedAt: doc.createdAt,
+        size: doc.fileSize,
+        status: mapProcessingStatus(doc.processingStatus),
+        metrics: {
+          count: doc.metadata?.topics?.length || 0,
+          categories: doc.metadata?.esgCategories || []
+        }
+      }));
+      
+      setDocuments(transformedDocs);
+    } catch (err) {
+      console.error('Error fetching documents:', err);
+      setError('Failed to load documents. Please try again later.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handler to start editing an item
-  const handleEdit = (item: typeof mockExtractedData[0]) => {
-    setEditingItem({...item});
+  // Helper to map API status to UI status
+  const mapProcessingStatus = (status: string): 'processed' | 'processing' | 'failed' => {
+    if (status === 'completed') return 'processed';
+    if (status === 'processing') return 'processing';
+    return 'failed';
   };
 
-  // Handler to save edited item
-  const handleSaveEdit = () => {
-    // In a real application, you would update your data source
-    console.log("Saving edited item:", editingItem);
-    setEditingItem(null);
+  const handleDeleteDocument = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this document?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3001/api/documents/${id}?organizationId=${organization?.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete document');
+      }
+      
+      // Remove the document from the state
+      setDocuments(prevDocs => prevDocs.filter(doc => doc._id !== id && doc.id !== id));
+      
+      // Refresh the document list
+      fetchDocuments();
+    } catch (err) {
+      console.error('Error deleting document:', err);
+      alert('Failed to delete document. Please try again.');
+    }
+  };
+
+  const handleExtractMetrics = async (id: string) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/esg/documents/${id}/extract?organizationId=${organization?.id}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to extract metrics');
+      }
+      
+      // Refresh documents list to show updated status
+      fetchDocuments();
+    } catch (err) {
+      console.error('Error extracting metrics:', err);
+      alert('Failed to extract metrics. Please try again.');
+    }
+  };
+
+  const filteredDocuments = documents.filter(doc => {
+    // Filter by search query
+    const matchesSearch = doc.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         doc.type?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Filter by tab
+    if (activeTab === 'all') return matchesSearch;
+    if (activeTab === 'processed') return matchesSearch && doc.status === 'processed';
+    if (activeTab === 'processing') return matchesSearch && doc.status === 'processing';
+    if (activeTab === 'failed') return matchesSearch && doc.status === 'failed';
+    
+    return matchesSearch;
+  });
+
+  const getDocumentTypeLabel = (type: string): string => {
+    const typeMap: Record<string, string> = {
+      'environmental_report': 'Environmental Report',
+      'sustainability_report': 'Sustainability Report',
+      'governance_document': 'Governance Document',
+      'social_impact_report': 'Social Impact Report',
+      'financial_statement': 'Financial Statement',
+      'other': 'Other',
+    };
+    
+    return typeMap[type] || type;
+  };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
+  };
+
+  const formatSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   return (
     <AuthenticatedLayout>
       <div className="container mx-auto py-6 px-4 md:px-8 space-y-8 max-w-7xl">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-800 mb-1">Data Management</h1>
-          <div className="flex gap-3">
-            <Button variant="outline" className="border-slate-300">
-              <Download className="mr-2 h-4 w-4" /> Export Data
-            </Button>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-800 flex items-center gap-2 mb-1">
+              <FileText className="h-7 w-7 text-emerald-600" /> Document Management
+            </h1>
+            <p className="text-slate-600">
+              Upload and manage your ESG-related documents
+            </p>
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger 
-              value="upload" 
-              className={activeTab === "upload" ? "bg-slate-800 text-white data-[state=active]:bg-slate-800 data-[state=active]:text-white" : ""}
-            >
-              <FileUp className="mr-2 h-4 w-4" /> Upload Center
-            </TabsTrigger>
-            <TabsTrigger 
-              value="review" 
-              className={activeTab === "review" ? "bg-slate-800 text-white data-[state=active]:bg-slate-800 data-[state=active]:text-white" : ""}
-            >
-              <Search className="mr-2 h-4 w-4" /> Review Data
-            </TabsTrigger>
-          </TabsList>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Upload Section */}
+          <div className="lg:col-span-1 upload-section">
+            <DocumentUpload />
+          </div>
 
-          {/* Upload Center Tab */}
-          <TabsContent value="upload" className="space-y-4">
-            <Card>
+          {/* Documents List Section */}
+          <div className="lg:col-span-2">
+            <Card className="shadow-sm">
               <CardHeader>
-                <CardTitle>Upload Documents</CardTitle>
-                <CardDescription>Upload your ESG-related documents here. Supported formats: PDF, CSV, JSON, XLSX.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Drag & Drop Area */}
-                <div className="border-2 border-dashed border-slate-200 rounded-lg p-10 text-center cursor-pointer hover:border-slate-400 transition-colors">
-                  <FileUp className="mx-auto h-10 w-10 text-slate-400 mb-4" />
-                  <p className="text-slate-600">Drag & drop files here, or click below</p>
-                  <Input id="file-upload" type="file" className="hidden" multiple />
-                  <Button variant="outline" className="mt-4" onClick={() => document.getElementById('file-upload')?.click()}>
-                    Browse Files
+                <CardTitle>Your Documents</CardTitle>
+                <CardDescription>Manage and process your uploaded documents</CardDescription>
+                
+                <div className="mt-4 flex items-center">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+                    <Input
+                      type="search"
+                      placeholder="Search documents..."
+                      className="pl-9"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="ml-2"
+                    onClick={fetchDocuments}
+                  >
+                    Refresh
                   </Button>
                 </div>
-
-                {/* Supported Formats Icons */}
-                <div className="flex justify-center space-x-8 text-slate-600">
-                  <div className="flex items-center">
-                    <FileText className="h-5 w-5 mr-1 text-red-500" />
-                    <span>PDF</span>
-                  </div>
-                  <div className="flex items-center">
-                    <FileSpreadsheet className="h-5 w-5 mr-1 text-green-600" />
-                    <span>CSV</span>
-                  </div>
-                  <div className="flex items-center">
-                    <FileText className="h-5 w-5 mr-1 text-blue-500" />
-                    <span>JSON</span>
-                  </div>
-                  <div className="flex items-center">
-                    <FileSpreadsheet className="h-5 w-5 mr-1 text-blue-700" />
-                    <span>XLSX</span>
-                  </div>
-                </div>
-
-                {/* Tagging Assistant Input */}
-                <div className="space-y-2">
-                  <Label htmlFor="file-tag">Tag your upload (optional)</Label>
-                  <Input 
-                    id="file-tag" 
-                    placeholder="e.g., Q1 Utility Bill, Board Charter 2024" 
-                    className="max-w-full"
-                  />
-                  <p className="text-sm text-slate-500">Help us categorize your document faster.</p>
-                </div>
-
-                {/* Uploaded Files Section */}
-                <div className="space-y-2">
-                  <h3 className="text-lg font-medium">Uploaded Files</h3>
-                  <div className="border rounded-md px-4 py-3 text-slate-500 text-sm">
-                    [List of uploaded files and their processing status will appear here]
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Review Data Tab */}
-          <TabsContent value="review" className="space-y-6">
-            {/* Data Table Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Data Table View</CardTitle>
-                <CardDescription>Review, filter, and manage your extracted ESG data points.</CardDescription>
+                
+                <Tabs className="mt-4" value={activeTab} onValueChange={setActiveTab}>
+                  <TabsList className="grid grid-cols-4">
+                    <TabsTrigger value="all">All</TabsTrigger>
+                    <TabsTrigger value="processed">Processed</TabsTrigger>
+                    <TabsTrigger value="processing">Processing</TabsTrigger>
+                    <TabsTrigger value="failed">Failed</TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </CardHeader>
+              
               <CardContent>
-                {/* Filter Controls */}
-                <div className="flex flex-col md:flex-row gap-4 mb-6">
-                  <div className="w-full md:w-64">
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger>
-                        <div className="flex items-center">
-                          <Filter className="h-4 w-4 mr-2 text-slate-500" />
-                          <SelectValue placeholder="All Categories" />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        <SelectItem value="environmental">Environmental</SelectItem>
-                        <SelectItem value="social">Social</SelectItem>
-                        <SelectItem value="governance">Governance</SelectItem>
-                      </SelectContent>
-                    </Select>
+                {error && (
+                  <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 flex items-start gap-2">
+                    <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                    <span>{error}</span>
                   </div>
-
-                  <div className="w-full md:w-64">
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger>
-                        <div className="flex items-center">
-                          <Filter className="h-4 w-4 mr-2 text-slate-500" />
-                          <SelectValue placeholder="Filter by Status" />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="ok">OK</SelectItem>
-                        <SelectItem value="missing">Missing</SelectItem>
-                        <SelectItem value="outdated">Outdated</SelectItem>
-                      </SelectContent>
-                    </Select>
+                )}
+                
+                {loading ? (
+                  <div className="flex justify-center items-center py-12">
+                    <Loader2 className="h-8 w-8 text-emerald-600 animate-spin" />
                   </div>
-                </div>
-
-                {/* Data Table */}
-                <div className="rounded-md border overflow-hidden">
-                  <Table>
-                    <TableHeader className="bg-slate-50">
-                      <TableRow>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Field</TableHead>
-                        <TableHead>Value</TableHead>
-                        <TableHead>Source</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredData.length > 0 ? (
-                        filteredData.map((row) => (
-                          <TableRow key={row.id} className="hover:bg-slate-50">
-                            <TableCell className="font-medium">{row.category}</TableCell>
-                            <TableCell>{row.field}</TableCell>
-                            <TableCell>{row.value}</TableCell>
-                            <TableCell>{row.source}</TableCell>
-                            <TableCell>{row.date}</TableCell>
-                            <TableCell>{getStatusBadge(row.status)}</TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button 
-                                  variant="outline" 
+                ) : filteredDocuments.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <FileText className="h-16 w-16 text-slate-300 mb-4" />
+                    <h3 className="text-lg font-medium text-slate-700 mb-2">No documents found</h3>
+                    {searchQuery ? (
+                      <p className="text-slate-500 mb-6">No documents matching your search criteria</p>
+                    ) : (
+                      <>
+                        <p className="text-slate-500 mb-2">You haven't uploaded any documents yet</p>
+                        <p className="text-slate-500 mb-6">Upload ESG-related documents to get insights and improve your score</p>
+                        <div className="flex items-center justify-center gap-4">
+                          <Button 
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                            onClick={() => document.querySelector('.upload-section button')?.scrollIntoView({ behavior: 'smooth' })}
+                          >
+                            <Upload className="mr-2 h-4 w-4" /> Upload your first document
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-left">
+                          <th className="pb-3 font-medium text-slate-500">Document</th>
+                          <th className="pb-3 font-medium text-slate-500">Type</th>
+                          <th className="pb-3 font-medium text-slate-500">Uploaded</th>
+                          <th className="pb-3 font-medium text-slate-500">Status</th>
+                          <th className="pb-3 font-medium text-slate-500">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {filteredDocuments.map((doc) => (
+                          <tr key={doc.id} className="hover:bg-slate-50">
+                            <td className="py-3">
+                              <div className="flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-slate-400" />
+                                <span className="font-medium text-slate-700">{doc.name}</span>
+                                <span className="text-xs text-slate-500">({formatSize(doc.size || 0)})</span>
+                              </div>
+                            </td>
+                            <td className="py-3 text-slate-600">{getDocumentTypeLabel(doc.type || 'other')}</td>
+                            <td className="py-3 text-slate-600">{formatDate(doc.uploadedAt || '')}</td>
+                            <td className="py-3">
+                              <div className="flex items-center gap-1.5">
+                                {doc.status === 'processed' && (
+                                  <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700">
+                                    <FileCheck className="mr-1 h-3 w-3" /> 
+                                    Processed
+                                    {doc.metrics && (
+                                      <span className="ml-1">({doc.metrics.count})</span>
+                                    )}
+                                  </span>
+                                )}
+                                {doc.status === 'processing' && (
+                                  <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+                                    <Loader2 className="mr-1 h-3 w-3 animate-spin" /> 
+                                    Processing
+                                  </span>
+                                )}
+                                {doc.status === 'failed' && (
+                                  <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-red-700">
+                                    <AlertCircle className="mr-1 h-3 w-3" /> 
+                                    Failed
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3">
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
                                   size="sm"
-                                  onClick={() => handleEdit(row)}
-                                  className="h-8 px-2 text-slate-700"
+                                  className="h-8 w-8 p-0"
+                                  onClick={() => handleDeleteDocument(doc._id || '')}
                                 >
-                                  <EditIcon className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => setShowExtractionFeedback(true)}
-                                  className="h-8 px-2 text-blue-700"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="destructive" 
-                                  size="sm"
-                                  className="h-8 px-2"
-                                >
-                                  <Trash className="h-4 w-4" />
+                                  <Trash2 className="h-4 w-4 text-slate-500 hover:text-red-500" />
+                                  <span className="sr-only">Delete</span>
                                 </Button>
                               </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={7} className="h-24 text-center">
-                            No results found.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* Edit Field Dialog */}
-      <Dialog open={editingItem !== null} onOpenChange={(open) => !open && setEditingItem(null)}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Edit ESG Data Field</DialogTitle>
-            <DialogDescription>
-              Update the information for this data point. Click save when you&apos;re done.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {editingItem && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="category" className="text-right">Category</Label>
-                <div className="col-span-3">
-                  <Select 
-                    value={editingItem.category}
-                    onValueChange={(value) => setEditingItem({...editingItem, category: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Environmental">Environmental</SelectItem>
-                      <SelectItem value="Social">Social</SelectItem>
-                      <SelectItem value="Governance">Governance</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="field" className="text-right">Field</Label>
-                <Input
-                  id="field"
-                  value={editingItem.field}
-                  onChange={(e) => setEditingItem({...editingItem, field: e.target.value})}
-                  className="col-span-3"
-                />
-              </div>
-              
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="value" className="text-right">Value</Label>
-                <Input
-                  id="value"
-                  value={editingItem.value}
-                  onChange={(e) => setEditingItem({...editingItem, value: e.target.value})}
-                  className="col-span-3"
-                />
-              </div>
-              
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="source" className="text-right">Source</Label>
-                <Input
-                  id="source"
-                  value={editingItem.source}
-                  onChange={(e) => setEditingItem({...editingItem, source: e.target.value})}
-                  className="col-span-3"
-                />
-              </div>
-              
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="date" className="text-right">Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={editingItem.date}
-                  onChange={(e) => setEditingItem({...editingItem, date: e.target.value})}
-                  className="col-span-3"
-                />
-              </div>
-              
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="status" className="text-right">Status</Label>
-                <div className="col-span-3">
-                  <Select 
-                    value={editingItem.status}
-                    onValueChange={(value) => setEditingItem({...editingItem, status: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="OK">OK</SelectItem>
-                      <SelectItem value="Missing">Missing</SelectItem>
-                      <SelectItem value="Outdated">Outdated</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button type="submit" onClick={handleSaveEdit} className="bg-emerald-600 hover:bg-emerald-700">
-              <Save className="h-4 w-4 mr-2" /> Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Auto-Extraction Feedback Dialog */}
-      <Dialog open={showExtractionFeedback} onOpenChange={setShowExtractionFeedback}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5 text-slate-600" />
-              Auto-Extraction Feedback
-            </DialogTitle>
-            <DialogDescription>
-              Review AI-extracted data for: <span className="font-medium">{mockExtractionFeedback.fileName}</span>
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-5 my-2">
-            {mockExtractionFeedback.extractedFields.map((item, index) => (
-              <div key={index} className="bg-slate-50 p-4 rounded-lg space-y-2">
-                <div className="flex justify-between">
-                  <div>
-                    <h3 className="font-medium text-slate-900">{item.field}</h3>
-                    <p className="text-lg">{item.value}</p>
-                  </div>
-                  <Badge 
-                    variant="outline"
-                    className={
-                      item.confidence >= 90 ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                      item.confidence >= 80 ? "bg-amber-50 text-amber-700 border-amber-200" :
-                      "bg-red-50 text-red-700 border-red-200"
-                    }
-                  >
-                    Confidence: {item.confidence}%
-                  </Badge>
-                </div>
-                <div className="flex gap-2 pt-1">
-                  <Button size="sm" className="h-8 gap-1 bg-emerald-600 hover:bg-emerald-700">
-                    <Check className="h-4 w-4" /> Confirm
-                  </Button>
-                  <Button size="sm" variant="outline" className="h-8 gap-1">
-                    <EditIcon className="h-4 w-4" /> Edit
-                  </Button>
-                  <Button size="sm" variant="destructive" className="h-8 gap-1">
-                    <X className="h-4 w-4" /> Reject
-                  </Button>
-                </div>
-              </div>
-            ))}
           </div>
-          
-          <DialogFooter className="flex justify-between border-t pt-4">
-            <Button variant="outline" onClick={() => setShowExtractionFeedback(false)}>
-              Close
-            </Button>
-            <div className="flex gap-2">
-              <Button className="bg-emerald-600 hover:bg-emerald-700">
-                <Check className="mr-2 h-4 w-4" /> Confirm All
-              </Button>
-              <Button variant="destructive">
-                <X className="mr-2 h-4 w-4" /> Reject All
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>
     </AuthenticatedLayout>
   );
 }
