@@ -1,20 +1,21 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useUser, useOrganization } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
-import { useEffect, useState, useRef, useCallback } from "react";
 import { useApiAuth } from "@/hooks/useApiAuth";
-import { AlertCircle, FileText, Loader2, Search, TrendingUp, ArrowRight, Info, CalendarDays, Clock, ChevronDown } from "lucide-react";
+import { AlertCircle, FileText, Loader2, Search, TrendingUp, ArrowRight, Info, CalendarDays, Clock, ChevronDown, ShieldAlert } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
 
 // Define score data types
 type EsgScore = {
@@ -108,6 +109,7 @@ type ScoringQueueStatus = {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { user, isLoaded: isUserLoaded } = useUser();
   const { organization, isLoaded: isOrgLoaded } = useOrganization();
   const { isReady, error: authError, get } = useApiAuth();
@@ -123,6 +125,8 @@ export default function DashboardPage() {
   const [hasFetched, setHasFetched] = useState(false);
   const [isScoring, setIsScoring] = useState(false);
   const [scoringStartTime, setScoringStartTime] = useState<string | null>(null);
+  const [accessChecked, setAccessChecked] = useState(false);
+  const [hasAccess, setHasAccess] = useState(true);
   
   // For polling when scoring is in progress
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
@@ -455,8 +459,7 @@ export default function DashboardPage() {
               </Button>
             </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
         {/* Error Message */}
         {displayError && (
@@ -931,6 +934,6 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
-    </div>
+    </AuthenticatedLayout>
   );
 }

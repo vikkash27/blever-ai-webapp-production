@@ -37,7 +37,7 @@ export default function ProtectedLayout({
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Top Navigation Bar */}
+      Top Navigation Bar
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">

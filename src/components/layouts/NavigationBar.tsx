@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 const navigationItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Data Management', href: '/data-management', icon: Database },
-  { name: 'My Company', href: '/my-company', icon: Building2 },
+  { name: 'My Company', href: '/company', icon: Building2 },
   { name: 'Upload Guide', href: '/upload-guide', icon: FileUp },
 ];
 
