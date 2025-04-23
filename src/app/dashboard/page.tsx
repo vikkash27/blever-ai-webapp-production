@@ -1,9 +1,10 @@
 'use client';
 
-import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
+import { useEffect, useState } from "react";
 import { useUser, useOrganization } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useApiAuth } from "@/hooks/useApiAuth";
@@ -151,7 +152,7 @@ export default function DashboardPage() {
         setIsCompanyProfileComplete(essentialFields.every(field => field && field.trim() !== ''));
       }
     }
-  }, [isUserLoaded, isOrgLoaded, organization]);
+  }, [isUserLoaded, isOrgLoaded, organization, router]);
 
   // Fetch ESG scores and recommendations from backend with memoized callback
   const fetchData = useCallback(async () => {
@@ -362,9 +363,35 @@ export default function DashboardPage() {
 
   if (!isUserLoaded || !isOrgLoaded || shouldRedirect) {
     return (
-      <AuthenticatedLayout>
-        <div className="p-6">Loading...</div>
-      </AuthenticatedLayout>
+      <div className="flex items-center justify-center h-full min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Verifying access permissions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show access denied if the organization doesn't have access
+  if (accessChecked && !hasAccess) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-screen p-4">
+        <div className="max-w-md w-full">
+          <Alert className="bg-red-50 border-red-200 mb-6">
+            <ShieldAlert className="h-5 w-5 text-red-600" />
+            <AlertTitle className="text-red-700">Access Denied</AlertTitle>
+            <AlertDescription className="text-red-600">
+              Your organization does not have access to the dashboard. You will be redirected to the organization selection page.
+            </AlertDescription>
+          </Alert>
+          <Button 
+            onClick={() => router.push('/select-organization')} 
+            className="w-full"
+          >
+            Return to Organization Selection
+          </Button>
+        </div>
+      </div>
     );
   }
 
@@ -423,12 +450,13 @@ export default function DashboardPage() {
           </div>
           <div className="flex gap-3 mt-2 md:mt-0">
             <Link href="/data-management">
-              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
+              <Button className="bg-amber-500 hover:bg-amber-600 text-white shadow-sm">
                 <ArrowRight className="mr-2 h-4 w-4" /> Upload Missing Data
               </Button>
             </Link>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
         {/* Error Message */}
         {displayError && (
@@ -903,6 +931,6 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
-    </AuthenticatedLayout>
+    </div>
   );
 }
