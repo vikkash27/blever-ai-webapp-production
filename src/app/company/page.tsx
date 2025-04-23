@@ -4,7 +4,6 @@ import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
 import { useOrganization, OrganizationProfile, useClerk } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -412,8 +411,8 @@ export default function CompanyOverviewPage() {
   return (
     <AuthenticatedLayout>
       <div className="container mx-auto py-6 px-4 md:px-8 space-y-8 max-w-7xl">
-        {/* Company Header Section */}
-        <div className="flex flex-col items-center text-center mb-8">
+        {/* Header with company name and logo */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
           {/* Company Logo */}
           <div className="mb-4 relative group">
             <div className="w-32 h-32 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center border-4 border-white shadow-md">
@@ -452,584 +451,340 @@ export default function CompanyOverviewPage() {
           </div>
         </div>
         
-        {/* Main Content Tabs - Updated to match data-management styling */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
-            <TabsTrigger 
-              value="overview" 
-              className={activeTab === "overview" ? "bg-slate-800 text-white data-[state=active]:bg-slate-800 data-[state=active]:text-white" : ""}
-            >
-              <Building className="mr-2 h-4 w-4" /> Company Overview
-            </TabsTrigger>
-            <TabsTrigger 
-              value="documents" 
-              className={activeTab === "documents" ? "bg-slate-800 text-white data-[state=active]:bg-slate-800 data-[state=active]:text-white" : ""}
-            >
-              <FileText className="mr-2 h-4 w-4" /> Company Documents
-            </TabsTrigger>
-            <TabsTrigger 
-              value="esg-targets" 
-              className={activeTab === "esg-targets" ? "bg-slate-800 text-white data-[state=active]:bg-slate-800 data-[state=active]:text-white" : ""}
-            >
-              <GanttChart className="mr-2 h-4 w-4" /> ESG Targets
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Company Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Company Profile Card */}
-              <Card className="md:col-span-2 shadow-sm border-slate-200">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building className="h-5 w-5 text-slate-700" /> 
-                    Company Details
-                  </CardTitle>
-                  <CardDescription>
-                    Manage company-specific information like industry and size.
-                    Organization name and profile picture are managed in Organization Settings.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Form Success Message */}
-                  {formSuccess && (
-                    <div className="bg-green-50 text-green-700 p-3 rounded-md mb-4 flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
-                      <span>Company information saved successfully!</span>
-                    </div>
-                  )}
-                  
-                  {/* Form Error Message */}
-                  {formError && (
-                    <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 flex items-start gap-2">
-                      <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
-                      <span>{formError}</span>
-                    </div>
-                  )}
-                  
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="company-industry">Industry</Label>
-                        <Select value={companyData.industry} onValueChange={(value) => handleSelectChange(value, 'industry')}>
-                          <SelectTrigger id="company-industry">
-                            <SelectValue placeholder="Select industry" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="technology">Technology</SelectItem>
-                            <SelectItem value="manufacturing">Manufacturing</SelectItem>
-                            <SelectItem value="healthcare">Healthcare</SelectItem>
-                            <SelectItem value="finance">Finance</SelectItem>
-                            <SelectItem value="retail">Retail</SelectItem>
-                            <SelectItem value="education">Education</SelectItem>
-                            <SelectItem value="energy">Energy</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="company-size">Company Size</Label>
-                        <Select value={companyData.size} onValueChange={(value) => handleSelectChange(value, 'size')}>
-                          <SelectTrigger id="company-size">
-                            <SelectValue placeholder="Select company size" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="1-10">1-10 employees</SelectItem>
-                            <SelectItem value="11-50">11-50 employees</SelectItem>
-                            <SelectItem value="51-200">51-200 employees</SelectItem>
-                            <SelectItem value="201-500">201-500 employees</SelectItem>
-                            <SelectItem value="501-1000">501-1000 employees</SelectItem>
-                            <SelectItem value="1001-5000">1001-5000 employees</SelectItem>
-                            <SelectItem value="5000+">5000+ employees</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="company-description">Company Description</Label>
-                      <textarea 
-                        id="company-description" 
-                        placeholder="Describe your company, mission and values..."
-                        className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        value={companyData.description}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="company-website">Website</Label>
-                        <div className="flex">
-                          <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
-                            <Globe className="h-4 w-4 text-slate-500" />
-                          </div>
-                          <Input 
-                            id="company-website" 
-                            placeholder="www.example.com" 
-                            className="rounded-l-none"
-                            value={companyData.website}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="company-foundedYear">Founded Year</Label>
-                        <Input 
-                          id="company-foundedYear" 
-                          type="number" 
-                          placeholder="e.g. 2010" 
-                          min="1800" 
-                          max="2099"
-                          value={companyData.foundedYear}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="company-headquarters">Headquarters</Label>
-                        <Input 
-                          id="company-headquarters" 
-                          placeholder="e.g. London, UK"
-                          value={companyData.headquarters}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="company-address">Full Address</Label>
-                      <textarea 
-                        id="company-address" 
-                        placeholder="Enter your company's full address"
-                        className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        value={companyData.address}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="company-country">Country</Label>
-                        <Select value={companyData.country} onValueChange={(value) => handleSelectChange(value, 'country')}>
-                          <SelectTrigger id="company-country">
-                            <SelectValue placeholder="Select country" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="uk">United Kingdom</SelectItem>
-                            <SelectItem value="us">United States</SelectItem>
-                            <SelectItem value="ca">Canada</SelectItem>
-                            <SelectItem value="au">Australia</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="company-sector">Sector</Label>
-                        <Select value={companyData.sector} onValueChange={(value) => handleSelectChange(value, 'sector')}>
-                          <SelectTrigger id="company-sector">
-                            <SelectValue placeholder="Select sector" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="public">Public</SelectItem>
-                            <SelectItem value="private">Private</SelectItem>
-                            <SelectItem value="non-profit">Non-profit</SelectItem>
-                            <SelectItem value="government">Government</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="company-taxId">Tax ID/Company Number</Label>
-                        <Input 
-                          id="company-taxId" 
-                          placeholder="Enter company registration number"
-                          value={companyData.taxId}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Primary Contacts Card (replaces ESG Quick Stats) */}
-              <Card className="shadow-sm border-slate-200">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Mail className="h-5 w-5 text-slate-700" /> 
-                    Primary Contacts
-                  </CardTitle>
-                  <CardDescription>
-                    Key contacts for ESG reporting and data collection
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* ESG Reporting Lead */}
-                    <div className="space-y-2">
-                      <h3 className="font-medium">ESG Reporting Lead</h3>
-                      <div className="space-y-2">
-                        <Input 
-                          placeholder="Full Name"
-                          value={contacts.esgLead.name}
-                          onChange={(e) => handleContactChange('esgLead', 'name', e.target.value)}
-                        />
-                        <div className="flex">
-                          <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
-                            <Mail className="h-4 w-4 text-slate-500" />
-                          </div>
-                          <Input 
-                            placeholder="Email Address" 
-                            className="rounded-l-none"
-                            value={contacts.esgLead.email}
-                            onChange={(e) => handleContactChange('esgLead', 'email', e.target.value)}
-                          />
-                        </div>
-                        <div className="flex">
-                          <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
-                            <Phone className="h-4 w-4 text-slate-500" />
-                          </div>
-                          <Input 
-                            placeholder="Phone Number" 
-                            className="rounded-l-none"
-                            value={contacts.esgLead.phone}
-                            onChange={(e) => handleContactChange('esgLead', 'phone', e.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Sustainability Manager */}
-                    <div className="space-y-2">
-                      <h3 className="font-medium">Sustainability Manager</h3>
-                      <div className="space-y-2">
-                        <Input 
-                          placeholder="Full Name"
-                          value={contacts.sustainabilityManager.name}
-                          onChange={(e) => handleContactChange('sustainabilityManager', 'name', e.target.value)}
-                        />
-                        <div className="flex">
-                          <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
-                            <Mail className="h-4 w-4 text-slate-500" />
-                          </div>
-                          <Input 
-                            placeholder="Email Address" 
-                            className="rounded-l-none"
-                            value={contacts.sustainabilityManager.email}
-                            onChange={(e) => handleContactChange('sustainabilityManager', 'email', e.target.value)}
-                          />
-                        </div>
-                        <div className="flex">
-                          <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
-                            <Phone className="h-4 w-4 text-slate-500" />
-                          </div>
-                          <Input 
-                            placeholder="Phone Number" 
-                            className="rounded-l-none"
-                            value={contacts.sustainabilityManager.phone}
-                            onChange={(e) => handleContactChange('sustainabilityManager', 'phone', e.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Finance Contact */}
-                    <div className="space-y-2">
-                      <h3 className="font-medium">CFO/Finance Contact</h3>
-                      <div className="space-y-2">
-                        <Input 
-                          placeholder="Full Name"
-                          value={contacts.financeContact.name}
-                          onChange={(e) => handleContactChange('financeContact', 'name', e.target.value)}
-                        />
-                        <div className="flex">
-                          <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
-                            <Mail className="h-4 w-4 text-slate-500" />
-                          </div>
-                          <Input 
-                            placeholder="Email Address" 
-                            className="rounded-l-none"
-                            value={contacts.financeContact.email}
-                            onChange={(e) => handleContactChange('financeContact', 'email', e.target.value)}
-                          />
-                        </div>
-                        <div className="flex">
-                          <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
-                            <Phone className="h-4 w-4 text-slate-500" />
-                          </div>
-                          <Input 
-                            placeholder="Phone Number" 
-                            className="rounded-l-none"
-                            value={contacts.financeContact.phone}
-                            onChange={(e) => handleContactChange('financeContact', 'phone', e.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Organization Settings (Clerk) */}
-            {isAdmin && (
-              <Card className="shadow-sm border-slate-200 overflow-hidden">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-slate-700" /> 
-                    Organization Settings
-                  </CardTitle>
-                  <CardDescription>
-                    Manage organization name, logo, members, roles, and security settings via Clerk.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <OrganizationProfile />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Add Save Button at the end of the form */}
-            <div className="flex justify-end pt-2">
-              <Button 
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                disabled={formSubmitting}
-                onClick={handleSaveCompanyData}
-              >
-                {formSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" /> Save Company Information
-                  </>
-                )}
-              </Button>
-            </div>
-          </TabsContent>
-
-          {/* Company Documents Tab */}
-          <TabsContent value="documents" className="space-y-6">
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-slate-700" /> 
-                      Company Documents
-                    </CardTitle>
-                    <CardDescription>
-                      Upload and manage key company documents for ESG evaluation
-                    </CardDescription>
-                  </div>
-                  {isAdmin && (
-                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                      <FileUp className="mr-2 h-4 w-4" /> Upload Document
-                    </Button>
-                  )}
+        {/* Main Content - Company Overview only */}
+        <div className="space-y-6">
+          {/* Company Profile Card */}
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building className="h-5 w-5 text-slate-700" /> 
+                Company Details
+              </CardTitle>
+              <CardDescription>
+                Manage company-specific information like industry and size.
+                Organization name and profile picture are managed in Organization Settings.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Form Success Message */}
+              {formSuccess && (
+                <div className="bg-green-50 text-green-700 p-3 rounded-md mb-4 flex items-start gap-2">
+                  <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                  <span>Company information saved successfully!</span>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border overflow-hidden">
-                  <table className="w-full">
-                    <thead className="bg-slate-50 text-sm">
-                      <tr>
-                        <th className="py-3 px-4 text-left font-medium text-slate-800">Document Name</th>
-                        <th className="py-3 px-4 text-left font-medium text-slate-800">Date Added</th>
-                        <th className="py-3 px-4 text-left font-medium text-slate-800">Type</th>
-                        <th className="py-3 px-4 text-left font-medium text-slate-800">Size</th>
-                        <th className="py-3 px-4 text-right font-medium text-slate-800">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {mockDocuments.length > 0 ? (
-                        mockDocuments.map((doc, index) => (
-                          <tr key={index} className="hover:bg-slate-50 text-sm">
-                            <td className="py-3 px-4 text-slate-700">
-                              <div className="flex items-center">
-                                <FileText className="h-4 w-4 text-slate-500 mr-2" />
-                                {doc.name}
-                              </div>
-                            </td>
-                            <td className="py-3 px-4 text-slate-700">{doc.date}</td>
-                            <td className="py-3 px-4 text-slate-700">{doc.type}</td>
-                            <td className="py-3 px-4 text-slate-700">{doc.size}</td>
-                            <td className="py-3 px-4 text-right">
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <Download className="h-4 w-4" />
-                              </Button>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={5} className="py-6 text-center text-slate-500">
-                            No documents have been uploaded yet.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+              )}
+              
+              {/* Form Error Message */}
+              {formError && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4 flex items-start gap-2">
+                  <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                  <span>{formError}</span>
                 </div>
-
-                <div className="mt-6 space-y-4">
-                  <h3 className="text-lg font-medium">Document Types to Consider Uploading</h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <Card className="bg-slate-50">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-md flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
-                            <Building className="h-3 w-3 text-emerald-600" />
-                          </div>
-                          Environmental
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <ul className="text-sm space-y-1">
-                          <li>• Sustainability Reports</li>
-                          <li>• Carbon Disclosure Reports</li>
-                          <li>• Energy Efficiency Initiatives</li>
-                          <li>• Environmental Policies</li>
-                        </ul>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="bg-slate-50">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-md flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                            <Users className="h-3 w-3 text-blue-600" />
-                          </div>
-                          Social
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <ul className="text-sm space-y-1">
-                          <li>• Diversity & Inclusion Policies</li>
-                          <li>• Health & Safety Records</li>
-                          <li>• Community Engagement Reports</li>
-                          <li>• Employee Benefits Documentation</li>
-                        </ul>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="bg-slate-50">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-md flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center">
-                            <Shield className="h-3 w-3 text-amber-600" />
-                          </div>
-                          Governance
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <ul className="text-sm space-y-1">
-                          <li>• Board Structure Documentation</li>
-                          <li>• Executive Compensation Policies</li>
-                          <li>• Ethical Guidelines & Code of Conduct</li>
-                          <li>• Anti-corruption Policies</li>
-                        </ul>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* ESG Targets Tab */}
-          <TabsContent value="esg-targets" className="space-y-6">
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <GanttChart className="h-5 w-5 text-slate-700" /> 
-                      ESG Targets & Commitments
-                    </CardTitle>
-                    <CardDescription>
-                      Track your organization&apos;s ESG goals and progress
-                    </CardDescription>
-                  </div>
-                  {isAdmin && (
-                    <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                      <Edit className="mr-2 h-4 w-4" /> Add New Target
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-6">
+              )}
+              
+              <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {mockESGTargets.map((target, index) => (
-                    <Card key={index} className="bg-slate-50">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-md">{target.name}</CardTitle>
-                        <CardDescription className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> Target Year: {target.targetYear}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-slate-600">Progress</span>
-                            <span className="text-sm font-medium">{target.progress}%</span>
-                          </div>
-                          <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-emerald-500 rounded-full" 
-                              style={{ width: `${target.progress}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  <div className="space-y-2">
+                    <Label htmlFor="company-industry">Industry</Label>
+                    <Select value={companyData.industry} onValueChange={(value) => handleSelectChange(value, 'industry')}>
+                      <SelectTrigger id="company-industry">
+                        <SelectValue placeholder="Select industry" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="technology">Technology</SelectItem>
+                        <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                        <SelectItem value="healthcare">Healthcare</SelectItem>
+                        <SelectItem value="finance">Finance</SelectItem>
+                        <SelectItem value="retail">Retail</SelectItem>
+                        <SelectItem value="education">Education</SelectItem>
+                        <SelectItem value="energy">Energy</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="company-size">Company Size</Label>
+                    <Select value={companyData.size} onValueChange={(value) => handleSelectChange(value, 'size')}>
+                      <SelectTrigger id="company-size">
+                        <SelectValue placeholder="Select company size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1-10">1-10 employees</SelectItem>
+                        <SelectItem value="11-50">11-50 employees</SelectItem>
+                        <SelectItem value="51-200">51-200 employees</SelectItem>
+                        <SelectItem value="201-500">201-500 employees</SelectItem>
+                        <SelectItem value="501-1000">501-1000 employees</SelectItem>
+                        <SelectItem value="1001-5000">1001-5000 employees</SelectItem>
+                        <SelectItem value="5000+">5000+ employees</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="company-description">Company Description</Label>
+                  <textarea 
+                    id="company-description" 
+                    placeholder="Describe your company, mission and values..."
+                    className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={companyData.description}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="company-website">Website</Label>
+                    <div className="flex">
+                      <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
+                        <Globe className="h-4 w-4 text-slate-500" />
+                      </div>
+                      <Input 
+                        id="company-website" 
+                        placeholder="www.example.com" 
+                        className="rounded-l-none"
+                        value={companyData.website}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                {isAdmin && (
-                  <div className="pt-2">
-                    <Card className="border-dashed border-2 border-slate-300 bg-slate-50/50">
-                      <CardContent className="flex flex-col items-center justify-center py-6">
-                        <p className="text-slate-600 mb-4">Add specific sustainability targets and commitments for your company</p>
-                        <Button variant="outline">
-                          <Edit className="mr-2 h-4 w-4" /> Define Your ESG Targets
-                        </Button>
-                      </CardContent>
-                    </Card>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="company-foundedYear">Founded Year</Label>
+                    <Input 
+                      id="company-foundedYear" 
+                      type="number" 
+                      placeholder="e.g. 2010" 
+                      min="1800" 
+                      max="2099"
+                      value={companyData.foundedYear}
+                      onChange={handleInputChange}
+                    />
                   </div>
-                )}
-              </CardContent>
-            </Card>
-            
-            {/* Industry Benchmarks */}
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-slate-700" /> 
-                  Industry Benchmarks
-                </CardTitle>
-                <CardDescription>
-                  Compare your performance with industry standards
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80 w-full relative">
-                  {/* Placeholder for chart component */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <BarChart3 className="h-full w-full text-slate-200" />
-                    <span className="absolute text-slate-500">
-                      Industry benchmark data will appear here
-                    </span>
+                  <div className="space-y-2">
+                    <Label htmlFor="company-headquarters">Headquarters</Label>
+                    <Input 
+                      id="company-headquarters" 
+                      placeholder="e.g. London, UK"
+                      value={companyData.headquarters}
+                      onChange={handleInputChange}
+                    />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="company-address">Full Address</Label>
+                  <textarea 
+                    id="company-address" 
+                    placeholder="Enter your company's full address"
+                    className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={companyData.address}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="company-country">Country</Label>
+                    <Select value={companyData.country} onValueChange={(value) => handleSelectChange(value, 'country')}>
+                      <SelectTrigger id="company-country">
+                        <SelectValue placeholder="Select country" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="uk">United Kingdom</SelectItem>
+                        <SelectItem value="us">United States</SelectItem>
+                        <SelectItem value="ca">Canada</SelectItem>
+                        <SelectItem value="au">Australia</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="company-sector">Sector</Label>
+                    <Select value={companyData.sector} onValueChange={(value) => handleSelectChange(value, 'sector')}>
+                      <SelectTrigger id="company-sector">
+                        <SelectValue placeholder="Select sector" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="public">Public</SelectItem>
+                        <SelectItem value="private">Private</SelectItem>
+                        <SelectItem value="non-profit">Non-profit</SelectItem>
+                        <SelectItem value="government">Government</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="company-taxId">Tax ID/Company Number</Label>
+                    <Input 
+                      id="company-taxId" 
+                      placeholder="Enter company registration number"
+                      value={companyData.taxId}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Save Button */}
+              <div className="flex justify-end">
+                <Button 
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={handleSaveCompanyData}
+                  disabled={formSubmitting}
+                >
+                  {formSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" /> Save Company Information
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ESG Contacts Card */}
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5 text-slate-700" /> 
+                Primary Contacts
+              </CardTitle>
+              <CardDescription>
+                Key contacts for ESG reporting and data collection
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* ESG Reporting Lead */}
+                <div className="space-y-2">
+                  <h3 className="font-medium">ESG Reporting Lead</h3>
+                  <div className="space-y-2">
+                    <Input 
+                      placeholder="Full Name"
+                      value={contacts.esgLead.name}
+                      onChange={(e) => handleContactChange('esgLead', 'name', e.target.value)}
+                    />
+                    <div className="flex">
+                      <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
+                        <Mail className="h-4 w-4 text-slate-500" />
+                      </div>
+                      <Input 
+                        placeholder="Email Address" 
+                        className="rounded-l-none"
+                        value={contacts.esgLead.email}
+                        onChange={(e) => handleContactChange('esgLead', 'email', e.target.value)}
+                      />
+                    </div>
+                    <div className="flex">
+                      <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
+                        <Phone className="h-4 w-4 text-slate-500" />
+                      </div>
+                      <Input 
+                        placeholder="Phone Number" 
+                        className="rounded-l-none"
+                        value={contacts.esgLead.phone}
+                        onChange={(e) => handleContactChange('esgLead', 'phone', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Sustainability Manager */}
+                <div className="space-y-2">
+                  <h3 className="font-medium">Sustainability Manager</h3>
+                  <div className="space-y-2">
+                    <Input 
+                      placeholder="Full Name"
+                      value={contacts.sustainabilityManager.name}
+                      onChange={(e) => handleContactChange('sustainabilityManager', 'name', e.target.value)}
+                    />
+                    <div className="flex">
+                      <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
+                        <Mail className="h-4 w-4 text-slate-500" />
+                      </div>
+                      <Input 
+                        placeholder="Email Address" 
+                        className="rounded-l-none"
+                        value={contacts.sustainabilityManager.email}
+                        onChange={(e) => handleContactChange('sustainabilityManager', 'email', e.target.value)}
+                      />
+                    </div>
+                    <div className="flex">
+                      <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
+                        <Phone className="h-4 w-4 text-slate-500" />
+                      </div>
+                      <Input 
+                        placeholder="Phone Number" 
+                        className="rounded-l-none"
+                        value={contacts.sustainabilityManager.phone}
+                        onChange={(e) => handleContactChange('sustainabilityManager', 'phone', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Finance Contact */}
+                <div className="space-y-2">
+                  <h3 className="font-medium">CFO/Finance Contact</h3>
+                  <div className="space-y-2">
+                    <Input 
+                      placeholder="Full Name"
+                      value={contacts.financeContact.name}
+                      onChange={(e) => handleContactChange('financeContact', 'name', e.target.value)}
+                    />
+                    <div className="flex">
+                      <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
+                        <Mail className="h-4 w-4 text-slate-500" />
+                      </div>
+                      <Input 
+                        placeholder="Email Address" 
+                        className="rounded-l-none"
+                        value={contacts.financeContact.email}
+                        onChange={(e) => handleContactChange('financeContact', 'email', e.target.value)}
+                      />
+                    </div>
+                    <div className="flex">
+                      <div className="flex items-center px-3 bg-slate-100 rounded-l-md border border-r-0 border-input">
+                        <Phone className="h-4 w-4 text-slate-500" />
+                      </div>
+                      <Input 
+                        placeholder="Phone Number" 
+                        className="rounded-l-none"
+                        value={contacts.financeContact.phone}
+                        onChange={(e) => handleContactChange('financeContact', 'phone', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Save Contact Information Button */}
+              <div className="flex justify-end pt-4">
+                <Button 
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={handleSaveCompanyData}
+                  disabled={formSubmitting}
+                >
+                  {formSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" /> Save Contact Information
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </AuthenticatedLayout>
   );
