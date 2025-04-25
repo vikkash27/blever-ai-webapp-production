@@ -33,7 +33,7 @@ export default function OrganizationSelectionPage() {
   const handleReturnToStart = () => {
     signOut(() => {
       // Will redirect to homepage after sign out
-      window.location.href = "/";
+      window.location.href = "/sign-in";
     });
   };
 
@@ -75,7 +75,7 @@ export default function OrganizationSelectionPage() {
       if (hasAccessPermission) {
         setMessage({
           type: 'success',
-          text: 'Your organization has access to the dashboard. You can proceed.'
+          text: 'Your organization has access to BLever. You can proceed.'
         });
       } else {
         setMessage({
@@ -130,7 +130,7 @@ export default function OrganizationSelectionPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl flex flex-col items-center justify-center min-h-screen py-8 px-4 bg-gradient-to-b from-slate-50 to-slate-100">
+    <div className="container mx-auto p-4 max-w-2xl flex flex-col items-center justify-center min-h-screen py-8 px-4 ">
       <div className="text-center mb-6">
         <Building2 className="h-10 w-10 text-emerald-600 mx-auto mb-2" />
         <h1 className="text-2xl font-semibold">Select Your Organization</h1>
@@ -148,7 +148,7 @@ export default function OrganizationSelectionPage() {
         <CardContent>
           {/* Organization Switcher */}
           <div className="flex justify-center mb-6">
-            <div className="w-full">
+            <div className="w-full flex flex-row justify-center">
               <OrganizationSwitcher 
                 hidePersonal={true}
                 appearance={{
@@ -174,16 +174,6 @@ export default function OrganizationSelectionPage() {
             >
               <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
               {isRefreshing ? 'Refreshing...' : 'Refresh Organizations'}
-            </Button>
-            
-            {/* Debug button - can be removed in production */}
-            <Button
-              variant="ghost"
-              onClick={debugOrganization}
-              size="sm"
-              className="text-xs text-slate-500"
-            >
-              Check Status
             </Button>
           </div>
 
@@ -249,7 +239,7 @@ export default function OrganizationSelectionPage() {
         onClick={handleReturnToStart} 
         className="mt-6 bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-2"
       >
-        Return to Start
+        Use a different account
         <LogOut className="h-4 w-4" />
       </Button>
     </div>

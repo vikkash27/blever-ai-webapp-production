@@ -15,28 +15,8 @@ export default function Page() {
               Sign in to continue to your account
             </p>
           </div>
-
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="bg-emerald-100 p-2 rounded-full text-emerald-700 mt-0.5">
-                <KeyRound size={18} />
-              </div>
-              <div>
-                <h3 className="font-medium text-slate-800">Secure access</h3>
-                <p className="text-sm text-slate-600">Sign in with your email or connect with Google</p>
-              </div>
-            </div>
-          </div>
         </div>
 
-        <Card className="md:col-span-3 shadow-lg border-slate-200">
-          <CardHeader className="sm:text-center">
-            <CardTitle className="text-xl">Sign In</CardTitle>
-            <CardDescription>
-              Access your account
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
             <SignIn
               path="/sign-in"
               signUpUrl="/sign-up"
@@ -52,8 +32,6 @@ export default function Page() {
                 }
               }}
             />
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

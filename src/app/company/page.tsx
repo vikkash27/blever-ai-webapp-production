@@ -547,42 +547,33 @@ export default function CompanyOverviewPage() {
     <AuthenticatedLayout>
       <div className="container mx-auto py-6 px-4 md:px-8 space-y-8 max-w-7xl">
         {/* Header with company name and logo */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+        <div className="flex flex-col items-center gap-4 mb-8">
           {/* Company Logo */}
-          <div className="mb-4 relative group">
-            <div className="w-32 h-32 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center border-4 border-white shadow-md">
-              {logoPreview ? (
+          <div className="relative">
+            <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center border-4 border-white shadow-md">
+              {organization.imageUrl ? (
                 <div className="relative w-full h-full">
                   <Image 
-                    src={logoPreview} 
-                    alt="Company Logo" 
+                    src={organization.imageUrl} 
+                    alt={`${organization.name} Logo`} 
                     className="object-cover" 
                     fill 
-                    sizes="128px"
+                    sizes="(max-width: 768px) 96px, 128px"
                   />
                 </div>
               ) : (
-                <Building className="h-16 w-16 text-slate-400" />
+                <Building className="h-12 w-12 md:h-16 md:w-16 text-slate-400" />
               )}
             </div>
-            
-            {isAdmin && (
-              <div className="absolute bottom-0 right-0">
-                <Label htmlFor="logo-upload" className="cursor-pointer">
-                  <div className="w-8 h-8 bg-emerald-600 hover:bg-emerald-700 rounded-full flex items-center justify-center shadow-sm">
-                    <Edit className="h-4 w-4 text-white" />
-                  </div>
-                </Label>
-                <Input id="logo-upload" type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
-              </div>
-            )}
           </div>
           
-          {/* Company Name and Basic Info */}
-          <h1 className="text-3xl font-bold text-slate-800">{organization.name}</h1>
-          <div className="flex items-center justify-center gap-3 mt-2 text-slate-600">
-            <MapPin className="h-4 w-4" />
-            <span>{companyData.headquarters || "Location details will appear here"}</span>
+          {/* Company Name and Details */}
+          <div className="flex flex-col text-center">
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-800">{organization.name}</h1>
+            <div className="flex items-center justify-center gap-2 mt-2 text-slate-600">
+              <MapPin className="h-4 w-4 flex-shrink-0" />
+              <span>{companyData.headquarters || "Location details will appear here"}</span>
+            </div>
           </div>
         </div>
         
