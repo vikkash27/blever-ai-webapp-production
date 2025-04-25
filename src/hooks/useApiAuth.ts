@@ -1,5 +1,5 @@
 import { useAuth, useOrganization } from '@clerk/nextjs';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export function useApiAuth() {
   const { getToken } = useAuth();
@@ -8,27 +8,39 @@ export function useApiAuth() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Function to fetch fresh token
+  const refreshToken = useCallback(async () => {
+    try {
+      const authToken = await getToken();
+      setToken(authToken);
+      setError('');
+      return authToken;
+    } catch (err) {
+      console.error('Error refreshing token:', err);
+      setError('Authentication error. Please try refreshing the page.');
+      return null;
+    }
+  }, [getToken]);
+
+  // Initial token fetch
   useEffect(() => {
     async function fetchToken() {
       try {
-        // Standard JWT token, no template needed
-        const authToken = await getToken();
-        setToken(authToken);
-        setError('');
-      } catch (err) {
-        console.error('Error fetching token:', err);
-        setError('Authentication error. Please try refreshing the page.');
+        await refreshToken();
       } finally {
         setLoading(false);
       }
     }
 
     fetchToken();
-  }, [getToken]);
+  }, [refreshToken]);
 
   // Create authenticated fetch function
   const authFetch = async (url: string, options: RequestInit = {}) => {
-    if (!token) {
+    // Refresh token before every request
+    const freshToken = await refreshToken();
+    
+    if (!freshToken) {
       throw new Error('No authentication token available');
     }
 
@@ -42,9 +54,9 @@ export function useApiAuth() {
       fetchUrl.searchParams.append('organizationId', organization.id);
     }
 
-    // Add authorization header
+    // Add authorization header with fresh token
     const headers = new Headers(options.headers || {});
-    headers.set('Authorization', `Bearer ${token}`);
+    headers.set('Authorization', `Bearer ${freshToken}`);
 
     const response = await fetch(fetchUrl.toString(), {
       ...options,
@@ -52,6 +64,26 @@ export function useApiAuth() {
     });
 
     if (response.status === 401) {
+      // Try one more time with a fresh token
+      try {
+        const retryToken = await refreshToken();
+        if (retryToken) {
+          const retryHeaders = new Headers(options.headers || {});
+          retryHeaders.set('Authorization', `Bearer ${retryToken}`);
+          
+          const retryResponse = await fetch(fetchUrl.toString(), {
+            ...options,
+            headers: retryHeaders
+          });
+          
+          if (retryResponse.ok || retryResponse.status === 202) {
+            return retryResponse;
+          }
+        }
+      } catch (retryError) {
+        console.error('Retry error:', retryError);
+      }
+      
       setError('Your session has expired. Please refresh the page.');
       throw new Error('Authentication failed: Invalid or expired token');
     }
@@ -103,6 +135,7 @@ export function useApiAuth() {
 
   return { 
     token, 
+    refreshToken,
     orgId: organization?.id || null, 
     loading, 
     error,
