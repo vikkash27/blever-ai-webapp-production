@@ -21,7 +21,9 @@ export const createApiClient = async (orgId: string | null, authToken?: string) 
   if (!token) {
     try {
       const { getToken } = await auth();
-      token = await getToken();
+      const sessionToken = await getToken();
+      // Convert null to undefined to match expected type
+      token = sessionToken || undefined;
     } catch (error) {
       console.error("Auth error in createApiClient:", error);
     }
