@@ -55,7 +55,7 @@ export async function getOrganizationStats() {
   }
 }
 
-export async function updateOrganization(data: any, providedOrgId?: string) {
+export async function updateOrganization(data: any, providedOrgId?: string, authToken?: string) {
   let orgId = providedOrgId;
   
   if (!orgId) {
@@ -73,7 +73,7 @@ export async function updateOrganization(data: any, providedOrgId?: string) {
   }
 
   try {
-    const api = await createApiClient(orgId);
+    const api = await createApiClient(orgId, authToken);
     return await api.organizationApi.updateCurrent(data);
   } catch (error) {
     // Handle specific error types

@@ -82,6 +82,7 @@ export default function CompanyOverviewPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [hasFetched, setHasFetched] = useState(false);
+  const [hasOrgFetched, setHasOrgFetched] = useState(false);
   const [isScoring, setIsScoring] = useState(false);
   const [scoringStartTime, setScoringStartTime] = useState<string | null>(null);
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
@@ -126,6 +127,11 @@ export default function CompanyOverviewPage() {
       phone: ""
     }
   });
+
+  // Reset the hasOrgFetched flag when component mounts to ensure fresh data is fetched
+  useEffect(() => {
+    setHasOrgFetched(false);
+  }, []);
 
   // Fetch company data on load
   useEffect(() => {
@@ -356,27 +362,51 @@ export default function CompanyOverviewPage() {
     setFormSuccess(false);
     
     try {
-      // Prepare the payload with company data and contacts
+      // Check if clerk and session are available
+      if (!clerk.session) {
+        throw new Error('Authentication session not available');
+      }
+      
+      // Prepare the payload with company data and contacts in the API-expected format
       const payload = {
-        organizationId: organization?.id,
-        ...companyData,
-        contacts
+        size: companyData.size,
+        profile: {
+          industry: companyData.industry,
+          description: companyData.description,
+          website: companyData.website,
+          headquartersLocation: companyData.headquarters,
+          fullAddress: companyData.address,
+          country: companyData.country,
+          sector: companyData.sector,
+          taxId: companyData.taxId,
+          contacts: {
+            esgReportingLead: {
+              fullName: contacts.esgLead.name,
+              email: contacts.esgLead.email,
+              phoneNumber: contacts.esgLead.phone
+            },
+            sustainabilityManager: {
+              fullName: contacts.sustainabilityManager.name,
+              email: contacts.sustainabilityManager.email,
+              phoneNumber: contacts.sustainabilityManager.phone
+            },
+            financeOfficer: {
+              fullName: contacts.financeContact.name,
+              email: contacts.financeContact.email,
+              phoneNumber: contacts.financeContact.phone
+            }
+          }
+        }
       };
       
-      // Send the request to update organization data
-      const response = await fetch(`/api/organizations/update`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-        credentials: 'include'
-      });
+      // Use the hook's put method which handles CORS and authentication properly
+      const apiUrl = getApiEndpoint('/api/organizations/current');
+      const response = await put(apiUrl, payload);
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update company data');
-      }
+      console.log('Update response:', response);
+      
+      // Mark organization data as updated
+      setHasOrgFetched(true);
       
       // Show success message
       setFormSuccess(true);
@@ -393,6 +423,91 @@ export default function CompanyOverviewPage() {
       setFormSubmitting(false);
     }
   };
+
+  // Add this function near the other data fetching functions (like fetchScores)
+  const fetchOrganizationDetails = useCallback(async () => {
+    if (!isReady || !organization) return;
+    if (fetchInProgress.current) return; // Prevent multiple concurrent requests
+    if (hasOrgFetched) return; // Skip if we've already fetched
+    
+    fetchInProgress.current = true;
+    console.log('Fetching organization details...');
+    
+    try {
+      // Don't set loading state to avoid UI flicker for org data
+      
+      // Fetch organization details using the useApiAuth helper
+      const response = await get(getApiEndpoint('/api/organizations/current'));
+      console.log("Organization API response:", response);
+      
+      if (response && response.success && response.data) {
+        // Update company data from API response
+        const orgData = response.data;
+        if (orgData.profile) {
+          const updatedCompanyData = {
+            industry: orgData.profile.industry || "",
+            size: orgData.size || "",
+            description: orgData.profile.description || "",
+            website: orgData.profile.website || "",
+            foundedYear: "",  // This seems to be missing in the API response
+            headquarters: orgData.profile.headquartersLocation || "",
+            address: orgData.profile.fullAddress || "",
+            country: orgData.profile.country || "",
+            sector: orgData.profile.sector || "",
+            taxId: orgData.profile.taxId || ""
+          };
+          
+          setCompanyData(updatedCompanyData);
+          
+          // Store in localStorage for persistence
+          localStorage.setItem('companyData', JSON.stringify(updatedCompanyData));
+          
+          // Update contacts if available
+          if (orgData.profile.contacts) {
+            const apiContacts = orgData.profile.contacts;
+            const updatedContacts = {
+              esgLead: {
+                name: apiContacts.esgReportingLead?.fullName || "",
+                email: apiContacts.esgReportingLead?.email || "",
+                phone: apiContacts.esgReportingLead?.phoneNumber || ""
+              },
+              sustainabilityManager: {
+                name: apiContacts.sustainabilityManager?.fullName || "",
+                email: apiContacts.sustainabilityManager?.email || "",
+                phone: apiContacts.sustainabilityManager?.phoneNumber || ""
+              },
+              financeContact: {
+                name: apiContacts.financeOfficer?.fullName || "",
+                email: apiContacts.financeOfficer?.email || "",
+                phone: apiContacts.financeOfficer?.phoneNumber || ""
+              }
+            };
+            
+            setContacts(updatedContacts);
+            
+            // Store in localStorage for persistence
+            localStorage.setItem('contacts', JSON.stringify(updatedContacts));
+          }
+        }
+        
+        console.log('Organization details fetched successfully');
+        // Mark as fetched to prevent repeated requests
+        setHasOrgFetched(true);
+      }
+    } catch (err) {
+      console.error("Error fetching organization details:", err);
+      // We don't set an error state here as it's not critical - we can fall back to existing data
+    } finally {
+      fetchInProgress.current = false;
+    }
+  }, [isReady, organization, get, hasOrgFetched]);
+
+  // Add this useEffect below the existing ones to fetch org details on load
+  useEffect(() => {
+    if (isReady && organization && !hasOrgFetched) {
+      fetchOrganizationDetails();
+    }
+  }, [isReady, organization, fetchOrganizationDetails, hasOrgFetched]);
 
   if (!isLoaded) {
     return (

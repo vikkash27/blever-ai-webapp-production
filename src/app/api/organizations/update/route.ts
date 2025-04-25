@@ -40,7 +40,7 @@ export async function PUT(request: NextRequest) {
       
       // Remove orgId from payload before passing to updateOrganization
       delete payload.orgId;
-      const response = await updateOrganization(payload, cookieOrgId);
+      const response = await updateOrganization(payload, cookieOrgId, token);
       console.log("Update successful");
       
       return NextResponse.json(response);
@@ -50,7 +50,7 @@ export async function PUT(request: NextRequest) {
     
     // Remove orgId from payload before passing to updateOrganization
     delete payload.orgId;
-    const response = await updateOrganization(payload, orgId);
+    const response = await updateOrganization(payload, orgId, token);
     console.log("Update successful");
     
     return NextResponse.json(response);

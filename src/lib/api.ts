@@ -14,9 +14,18 @@ interface AuthError extends Error {
   name: string;
 }
 
-export const createApiClient = async (orgId: string | null) => {
-  const { getToken } = await auth();
-  const token = await getToken();
+export const createApiClient = async (orgId: string | null, authToken?: string) => {
+  let token: string | undefined = authToken;
+  
+  // Only use auth() if no token was provided (server-side only)
+  if (!token) {
+    try {
+      const { getToken } = await auth();
+      token = await getToken();
+    } catch (error) {
+      console.error("Auth error in createApiClient:", error);
+    }
+  }
 
   const apiFetch = async (endpoint: string, options: APIOptions = {}) => {
     const { method = 'GET', body, headers = {}, multipart = false } = options;
